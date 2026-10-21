@@ -1,0 +1,5 @@
+{
+  "APP_ENV": "prod",
+  "API_BASE_URL": "",
+  "HTTP_LOG_ENABLED": "false"
+}

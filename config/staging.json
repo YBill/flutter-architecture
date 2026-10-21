@@ -1,0 +1,5 @@
+{
+  "APP_ENV": "staging",
+  "API_BASE_URL": "",
+  "HTTP_LOG_ENABLED": "true"
+}

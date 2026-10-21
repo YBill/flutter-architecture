@@ -1,0 +1,7 @@
+{
+  "@@locale": "zh_Hant",
+  "appTitle": "Novelverse",
+  "pageNotFound": "頁面不存在",
+  "startupFailed": "應用程式暫時無法啟動，請重試。",
+  "retry": "重試"
+}

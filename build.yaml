@@ -1,0 +1,13 @@
+targets:
+  $default:
+    builders:
+      json_serializable:
+        options:
+          checked: true
+      drift_dev:
+        options:
+          generate_manager: false
+          databases:
+            app: lib/core/database/app_database.dart
+          schema_dir: drift_schemas
+          test_dir: test/core/database/migrations
