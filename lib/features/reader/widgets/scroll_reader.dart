@@ -61,6 +61,8 @@ class _ScrollReaderState extends ConsumerState<ScrollReader> {
   EdgeInsets? _lastInsets;
   Size? _lastSize;
   int _jumpGeneration = 0;
+  int _listGeneration = 0;
+  double _initialAlignment = 0;
   bool _restoring = true;
   double _currentAlignment = 0;
   int? _requestedBoundary;
@@ -86,13 +88,24 @@ class _ScrollReaderState extends ConsumerState<ScrollReader> {
   void didUpdateWidget(covariant ScrollReader oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (widget.book == oldWidget.book) return;
-    // 窗口增删章节后按源文字与屏幕偏移恢复，避免预取完成时推走正在读的段落。
+    // Prepending a chapter shifts item indexes. Give the list its new anchor
+    // before layout; jumping after paint would expose the old index for a frame.
     final alignment = _currentAlignment;
+    final oldItem = _currentItem;
     _rebuildEntries();
     final pos = ref.read(readerPositionProvider(widget.book.id));
     _currentItem = _itemForPosition(pos.chapterIndex, pos.charOffset);
     _initialItem = _currentItem;
-    _jumpAfterLayout(_currentItem, alignment: alignment);
+    if (widget.book.id != oldWidget.book.id || _currentItem != oldItem) {
+      _initialAlignment = alignment;
+      _listGeneration++;
+      _restoring = true;
+      final generation = ++_jumpGeneration;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted || generation != _jumpGeneration) return;
+        _restoring = false;
+      });
+    }
   }
 
   void _rebuildEntries() {
@@ -272,8 +285,9 @@ class _ScrollReaderState extends ConsumerState<ScrollReader> {
               right: insets.right,
             ),
             child: ScrollablePositionedList.builder(
-              key: ValueKey(widget.book.id),
+              key: ValueKey((widget.book.id, _listGeneration)),
               initialScrollIndex: _initialItem,
+              initialAlignment: _initialAlignment,
               itemCount: _entries.length,
               itemScrollController: _scrollController,
               itemPositionsListener: _positionsListener,
