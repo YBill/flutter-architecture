@@ -1,7 +1,8 @@
+import 'features/reader/helpers/mock_book_api.dart';
+
 import 'features/reader/helpers/reader_test_support.dart';
 
 import 'package:novelverse/features/books/application/book_providers.dart';
-import 'package:novelverse/features/books/data/book_api.dart';
 import 'package:novelverse/features/books/data/book_cache.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';

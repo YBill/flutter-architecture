@@ -2,6 +2,9 @@
 *.class
 *.log
 *.pyc
+__pycache__/
+.venv/
+server/.runtime/
 *.swp
 .DS_Store
 .atom/

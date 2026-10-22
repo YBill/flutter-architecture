@@ -9,6 +9,13 @@
       "toolArgs": ["--dart-define-from-file=config/dev.json"]
     },
     {
+      "name": "Novelverse · dev (Android emulator)",
+      "request": "launch",
+      "type": "dart",
+      "program": "lib/main.dart",
+      "toolArgs": ["--dart-define-from-file=config/dev_android_emulator.json"]
+    },
+    {
       "name": "Novelverse · staging",
       "request": "launch",
       "type": "dart",

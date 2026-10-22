@@ -8,7 +8,8 @@ Flutter Android / iOS 小说 App。目前包含基础架构、原型版书籍详
 
 ```sh
 make setup
-make run-dev
+make server       # 单独终端启动 Python API
+make run-dev      # iOS 模拟器；Android USB 真机用 make run-dev-android
 ```
 
 不使用 Make 时执行：
@@ -20,7 +21,7 @@ dart run build_runner build
 flutter run --dart-define-from-file=config/dev.json
 ```
 
-VS Code 已提供 dev / staging / prod 启动配置。
+VS Code 已提供 dev / Android emulator / staging / prod 启动配置；Android Studio 可选择共享的 `Novelverse dev (local API)` 配置。首次接入本地服务的步骤见 [server/README.md](server/README.md)。
 
 ## 技术选型
 
@@ -59,31 +60,33 @@ lib/
     books/                      # 详情、推荐、收藏、模拟 API 与正文缓存
     reader/                     # 双模式阅读、分页、设置、阅读进度
   l10n/                         # ARB 与生成的本地化代码
-config/                         # 三环境的编译配置
+server/                         # 独立 Python HTTP 服务、书籍 JSON 和正文
+tool/                           # HTTP 联调检查脚本
+config/                         # 环境和模拟器地址配置
 drift_schemas/                 # 已提交的数据库历史 schema
 test/                          # 基础设施和应用接线测试
 ```
 
 后续业务放在 `lib/features/<feature>/`，按需要增加 `data/`、`application/`、`presentation/`；复杂业务再增加 `domain/`。页面通过 Provider / Repository 使用服务，网络基础层不依赖用户管理、路由或业务模型。
 
-当前业务表仅包含阅读进度和收藏。模拟数据通过 BookApi 接口提供；登录、支付和真实服务端协议尚未接入。
+当前业务表仅包含阅读进度和收藏。演示数据通过 Python HTTP 服务及 BookApi 接口提供；登录、支付和真实服务端协议尚未接入。
 
 ## 书籍详情与阅读器
 
 ### 真实测试书籍与接口
 
-真实正文来自参考项目 `readers`：**Claimed By The Ruthless Alpha**，作者 **Ofotokun Bridget**。203 章正文总计约 1.17 MB，平均每章约 5,700 字符，最大一章约 11,400 字符。原始章节文件完整保留在 assets；展示时仅移除与目录匹配的独立标题行，统一换行。
+真实正文来自参考项目 `readers`：**Claimed By The Ruthless Alpha**，作者 **Ofotokun Bridget**。203 章正文总计约 1.17 MB，平均每章约 5,700 字符，最大一章约 11,400 字符。原始章节文件完整保留在 `server/data/books/`；服务端响应时仅移除与目录匹配的独立标题行，统一换行。JSON 和正文不再打包进 App。
 
 阅读量、收藏量、评分和六本推荐为模拟数据。详情、书单及推荐 JSON 的 `coverUrl` 都使用提供的 HTTPS 封面地址，组件按真实网络方式加载，加载中、缺图及失败时显示简单占位图，不再打包或裁切原型封面素材。推荐 JSON 的 `targetBookId` 暂时指向这本真实测试书；未提供该字段时使用推荐书自身 ID，页面不指定测试书 ID。
 
-`MockBookApi` 通过本地 JSON 和章节文件模拟服务端响应，每个接口延迟 300 ms；封面图片实际通过 HTTPS 加载。书名、简介、统计、推荐、封面地址与推荐跳转目标均来自响应数据，替换 `bookApiProvider` 的实现即可接入真实 API。
+`HttpBookApi` 通过已有 Dio / ApiClient 请求 Python 本地服务，默认每次书籍请求延迟 150 ms。书名、简介、统计、推荐、封面地址与推荐跳转目标均来自 HTTP 响应；封面通过独立 HTTPS 请求加载。服务关闭时显示网络错误，不回退到 App 内置数据。`MockBookApi` 仅保留在测试目录，读取服务端 fixture 以隔离单元测试。后续服务端沿用当前协议时，修改 `API_BASE_URL` 即可；协议有变化时只调整数据层。
 
 | 接口 | 返回 |
 | --- | --- |
-| `GET /books/{id}` | 基本信息、简介、标签、统计、目录版本、**完整第一章** |
-| `GET /books/{id}/recommendations` | 独立推荐列表，可独立失败和重试 |
-| `GET /books/{id}/chapters` | 目录 ID、顺序、标题、正文版本，**不含各章正文** |
-| `GET /books/{id}/chapters/{chapterId}` | 单章正文 |
+| `GET /api/v1/books/{id}` | 基本信息、简介、标签、统计、目录版本、**完整第一章** |
+| `GET /api/v1/books/{id}/recommendations` | 独立推荐列表，可独立失败和重试 |
+| `GET /api/v1/books/{id}/chapters` | 目录 ID、顺序、标题、正文版本，**不含各章正文** |
+| `GET /api/v1/books/{id}/chapters/{chapterId}` | 单章正文 |
 
 详情附带的第一章直接进入同一正文缓存，阅读器不再重复请求。详情布局对照提供的 HTML 原型：紧凑封面与信息、不显示作者、单行小标签、阅读统计、最多四行简介（Read more / Show less）、半章预览、渐隐 Continue Reading、三列两行推荐和固定底部操作栏。浅紫背景随书籍头部滚动，正文区使用统一暖白纸色。顶栏底色和书名随滚动距离渐显，状态栏透明并使用深色图标，避免 Android 顶部灰色遮罩和硬切换。页面按字素取约一半并尽量停在段落或单词末尾。
 
@@ -123,16 +126,16 @@ Start Free Reading 和 Continue Reading 都恢复上次阅读位置；没有记�
 | 参数 | 取值 / 含义 |
 | --- | --- |
 | `APP_ENV` | `dev`（默认）、`staging`、`prod` |
-| `API_BASE_URL` | 可带路径的 HTTP(S) 基地址，默认留空 |
+| `API_BASE_URL` | 可带路径的 HTTP(S) 基地址，dev 指向本地服务；staging / prod 待配置 |
 | `HTTP_LOG_ENABLED` | 是否记录 HTTP 元数据，默认 false；prod / Release 强制关闭 |
 
-编辑 `config/*.json` 填入实际 API 地址。也可以临时覆盖单个参数：
+开发服务通过 `make server` 启动。`config/dev.json` 使用回环地址；Android USB 真机通过 `make android-reverse` 映射端口，Android 模拟器使用 `config/dev_android_emulator.json`。完整联调说明见 [server/README.md](server/README.md)。编辑 `config/*.json` 可切换实际 API 地址，也可以临时覆盖单个参数：
 
 ```sh
 flutter run --dart-define-from-file=config/dev.json --dart-define=API_BASE_URL=https://your-api.example/v1/
 ```
 
-未配置后端时仍可启动 App；相对路径请求会立即抛出 `ConfigurationException`，不会向占位服务器发请求。配置错误或存储读取失败时显示可重试的通用启动错误页，详情写入日志。
+未配置后端地址的环境仍可启动 App，但书籍请求会抛出 `ConfigurationException` 并显示加载失败。配置错误或存储读取失败时显示可重试的通用启动错误页，详情写入日志。
 
 三环境通过数据库文件名与存储 Key 前缀隔离数据。当前共用 Android applicationId / iOS bundle identifier；如需三套 App 同时安装，下一步再增加原生 flavors / schemes。
 

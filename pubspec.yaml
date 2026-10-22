@@ -41,7 +41,3 @@ dev_dependencies:
 flutter:
   uses-material-design: true
   generate: true
-  assets:
-    - assets/books/
-    - assets/books/claimed_ruthless_alpha/
-    - assets/books/claimed_ruthless_alpha/chapters/

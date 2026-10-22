@@ -1,3 +1,5 @@
+import 'helpers/mock_book_api.dart';
+
 import 'helpers/reader_test_support.dart';
 
 import 'package:flutter/material.dart';

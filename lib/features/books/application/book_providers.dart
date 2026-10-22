@@ -1,18 +1,19 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/database/database_providers.dart';
+import '../../../core/network/network_providers.dart';
 import '../../../core/providers/core_providers.dart';
 import '../../reader/data/reading_progress_store.dart';
 import '../data/book_api.dart';
 import '../data/book_cache.dart';
 import '../data/book_library_repository.dart';
 import '../data/book_repository.dart';
+import '../data/http_book_api.dart';
 import '../domain/book.dart';
 
-final bookApiProvider = Provider<BookApi>((ref) {
-  final logger = ref.watch(appLoggerProvider);
-  return MockBookApi(onRequest: (path) => logger.debug('[Mock API] GET $path'));
-});
+final bookApiProvider = Provider<BookApi>(
+  (ref) => HttpBookApi(ref.watch(apiClientProvider)),
+);
 final bookCacheProvider = Provider<BookCacheStore>(
   (ref) =>
       createBookCache(namespace: ref.watch(appConfigProvider).environment.name),
