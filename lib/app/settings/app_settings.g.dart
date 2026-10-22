@@ -9,7 +9,6 @@ part of 'app_settings.dart';
 AppSettings _$AppSettingsFromJson(Map<String, dynamic> json) =>
     $checkedCreate('AppSettings', json, ($checkedConvert) {
       final val = AppSettings(
-        locale: $checkedConvert('locale', (v) => _localeFromJson(v as String?)),
         themeMode: $checkedConvert(
           'themeMode',
           (v) =>
@@ -25,10 +24,7 @@ AppSettings _$AppSettingsFromJson(Map<String, dynamic> json) =>
     });
 
 Map<String, dynamic> _$AppSettingsToJson(AppSettings instance) =>
-    <String, dynamic>{
-      'locale': _localeToJson(instance.locale),
-      'themeMode': _$ThemeModeEnumMap[instance.themeMode]!,
-    };
+    <String, dynamic>{'themeMode': _$ThemeModeEnumMap[instance.themeMode]!};
 
 const _$ThemeModeEnumMap = {
   ThemeMode.system: 'system',

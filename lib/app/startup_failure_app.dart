@@ -15,6 +15,7 @@ class StartupFailureApp extends StatelessWidget {
     debugShowCheckedModeBanner: false,
     localizationsDelegates: AppLocalizations.localizationsDelegates,
     supportedLocales: AppLocalizations.supportedLocales,
+    locale: const Locale('en'),
     theme: AppTheme.light,
     darkTheme: AppTheme.dark,
     home: Builder(

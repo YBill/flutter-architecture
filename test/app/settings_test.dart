@@ -59,38 +59,41 @@ void main() {
   });
   tearDown(() => container.dispose());
 
-  test('settings JSON round trips a script-specific locale', () {
-    const settings = AppSettings(
-      locale: Locale.fromSubtags(languageCode: 'zh', scriptCode: 'Hant'),
-      themeMode: ThemeMode.dark,
-    );
+  test('settings JSON round trips the theme', () {
+    const settings = AppSettings(themeMode: ThemeMode.dark);
     final restored = AppSettings.fromJson(settings.toJson());
-    expect(restored.locale, settings.locale);
     expect(restored.themeMode, ThemeMode.dark);
+    expect(restored.toJson(), {'themeMode': 'dark'});
   });
 
-  test('old or unsupported locale/theme values follow the system', () {
-    final settings = AppSettings.fromJson({
-      'locale': 'unsupported',
-      'themeMode': 'old_theme_value',
-    });
-    expect(settings.locale, isNull);
+  test('legacy locale is ignored while the saved theme is retained', () async {
+    await preferences.setString(
+      'app_settings',
+      '{"locale":"zh-Hant","themeMode":"dark"}',
+    );
+    final settings = await repository.load();
+    expect(settings.themeMode, ThemeMode.dark);
+    await repository.save(settings);
+    expect(await preferences.getString('app_settings'), '{"themeMode":"dark"}');
+  });
+
+  test('unsupported theme values follow the system', () {
+    final settings = AppSettings.fromJson({'themeMode': 'old_theme_value'});
     expect(settings.themeMode, ThemeMode.system);
   });
 
   test(
-    'concurrent settings changes preserve both values after restart',
+    'concurrent theme changes preserve the latest value after restart',
     () async {
       final controller = container.read(settingsControllerProvider.notifier);
       await Future.wait([
-        controller.setLocale(const Locale('zh')),
+        controller.setThemeMode(ThemeMode.light),
         controller.setThemeMode(ThemeMode.dark),
       ]);
       final restored = await SettingsRepository(
         PreferencesStore(namespace: 'test.'),
         AppLogger(release: true),
       ).load();
-      expect(restored.locale, const Locale('zh'));
       expect(restored.themeMode, ThemeMode.dark);
       expect(
         container.read(settingsControllerProvider).themeMode,
@@ -118,17 +121,10 @@ void main() {
     },
   );
 
-  test('resetting locale persists follow-system mode', () async {
-    final controller = container.read(settingsControllerProvider.notifier);
-    await controller.setLocale(const Locale('en'));
-    await controller.setLocale(null);
-    expect((await repository.load()).locale, isNull);
-  });
-
   test(
     'malformed saved settings fall back, but platform failures propagate',
     () async {
-      for (final value in ['{', '[]', '{"locale":42}']) {
+      for (final value in ['{', '[]', '{"themeMode":42}']) {
         await preferences.setString('app_settings', value);
         expect((await repository.load()).themeMode, ThemeMode.system);
       }

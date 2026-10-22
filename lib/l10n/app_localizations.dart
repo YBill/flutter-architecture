@@ -6,7 +6,6 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:intl/intl.dart' as intl;
 
 import 'app_localizations_en.dart';
-import 'app_localizations_zh.dart';
 
 // ignore_for_file: type=lint
 
@@ -93,11 +92,7 @@ abstract class AppLocalizations {
       ];
 
   /// A list of this localizations delegate's supported locales.
-  static const List<Locale> supportedLocales = <Locale>[
-    Locale('en'),
-    Locale('zh'),
-    Locale.fromSubtags(languageCode: 'zh', scriptCode: 'Hant'),
-  ];
+  static const List<Locale> supportedLocales = <Locale>[Locale('en')];
 
   /// Application name
   ///
@@ -122,6 +117,108 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Retry'**
   String get retry;
+
+  /// No description provided for @chapterPreview.
+  ///
+  /// In en, this message translates to:
+  /// **'CHAPTER PREVIEW'**
+  String get chapterPreview;
+
+  /// No description provided for @continueReading.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue Reading'**
+  String get continueReading;
+
+  /// No description provided for @readMore.
+  ///
+  /// In en, this message translates to:
+  /// **'Read more'**
+  String get readMore;
+
+  /// No description provided for @showLess.
+  ///
+  /// In en, this message translates to:
+  /// **'Show less'**
+  String get showLess;
+
+  /// No description provided for @startFreeReading.
+  ///
+  /// In en, this message translates to:
+  /// **'Start Free Reading'**
+  String get startFreeReading;
+
+  /// No description provided for @youMightLike.
+  ///
+  /// In en, this message translates to:
+  /// **'You Might Be Like'**
+  String get youMightLike;
+
+  /// No description provided for @library.
+  ///
+  /// In en, this message translates to:
+  /// **'Library'**
+  String get library;
+
+  /// No description provided for @saved.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved'**
+  String get saved;
+
+  /// No description provided for @readers.
+  ///
+  /// In en, this message translates to:
+  /// **'Readers'**
+  String get readers;
+
+  /// No description provided for @savedReaders.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved'**
+  String get savedReaders;
+
+  /// No description provided for @rating.
+  ///
+  /// In en, this message translates to:
+  /// **'Rating'**
+  String get rating;
+
+  /// No description provided for @completed.
+  ///
+  /// In en, this message translates to:
+  /// **'Completed'**
+  String get completed;
+
+  /// No description provided for @shareBook.
+  ///
+  /// In en, this message translates to:
+  /// **'Share book'**
+  String get shareBook;
+
+  /// No description provided for @bookLoadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not load this book.'**
+  String get bookLoadFailed;
+
+  /// No description provided for @recommendationsFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not load recommendations. Retry'**
+  String get recommendationsFailed;
+
+  /// No description provided for @actionFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Something went wrong. Please try again.'**
+  String get actionFailed;
+
+  /// No description provided for @chapterCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} chapters'**
+  String chapterCount(int count);
 }
 
 class _AppLocalizationsDelegate
@@ -135,31 +232,17 @@ class _AppLocalizationsDelegate
 
   @override
   bool isSupported(Locale locale) =>
-      <String>['en', 'zh'].contains(locale.languageCode);
+      <String>['en'].contains(locale.languageCode);
 
   @override
   bool shouldReload(_AppLocalizationsDelegate old) => false;
 }
 
 AppLocalizations lookupAppLocalizations(Locale locale) {
-  // Lookup logic when language+script codes are specified.
-  switch (locale.languageCode) {
-    case 'zh':
-      {
-        switch (locale.scriptCode) {
-          case 'Hant':
-            return AppLocalizationsZhHant();
-        }
-        break;
-      }
-  }
-
   // Lookup logic when only language code is specified.
   switch (locale.languageCode) {
     case 'en':
       return AppLocalizationsEn();
-    case 'zh':
-      return AppLocalizationsZh();
   }
 
   throw FlutterError(

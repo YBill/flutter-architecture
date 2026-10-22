@@ -23,6 +23,10 @@ dependencies:
   path_provider: ^2.1.6
   riverpod_annotation: ^4.0.7
   shared_preferences: ^2.5.6
+  characters: ^1.4.1
+  scrollable_positioned_list: ^0.3.8
+  crypto: ^3.0.7
+  share_plus: ^13.3.1
 
 dev_dependencies:
   flutter_test:
@@ -37,3 +41,7 @@ dev_dependencies:
 flutter:
   uses-material-design: true
   generate: true
+  assets:
+    - assets/books/
+    - assets/books/claimed_ruthless_alpha/
+    - assets/books/claimed_ruthless_alpha/chapters/

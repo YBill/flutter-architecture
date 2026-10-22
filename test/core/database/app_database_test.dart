@@ -8,12 +8,12 @@ void main() {
   tearDown(() => database.close());
 
   test(
-    'opens schema v1 with foreign keys enabled and no business tables',
+    'opens schema v2 with foreign keys and durable reading tables',
     () async {
       final version = await database
           .customSelect('PRAGMA user_version')
           .getSingle();
-      expect(version.read<int>('user_version'), 1);
+      expect(version.read<int>('user_version'), 2);
       final foreignKeys = await database
           .customSelect('PRAGMA foreign_keys')
           .getSingle();
@@ -23,7 +23,10 @@ void main() {
             "SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%'",
           )
           .get();
-      expect(tables, isEmpty);
+      expect(tables.map((row) => row.read<String>('name')).toSet(), {
+        'reading_progress_entries',
+        'library_entries',
+      });
     },
   );
 

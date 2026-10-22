@@ -1,8 +1,34 @@
 {
   "@@locale": "en",
   "appTitle": "Novelverse",
-  "@appTitle": {"description": "Application name"},
+  "@appTitle": {
+    "description": "Application name"
+  },
   "pageNotFound": "Page not found",
   "startupFailed": "Unable to start the app. Please try again.",
-  "retry": "Retry"
+  "retry": "Retry",
+  "chapterPreview": "CHAPTER PREVIEW",
+  "continueReading": "Continue Reading",
+  "readMore": "Read more",
+  "showLess": "Show less",
+  "startFreeReading": "Start Free Reading",
+  "youMightLike": "You Might Be Like",
+  "library": "Library",
+  "saved": "Saved",
+  "readers": "Readers",
+  "savedReaders": "Saved",
+  "rating": "Rating",
+  "completed": "Completed",
+  "shareBook": "Share book",
+  "bookLoadFailed": "Could not load this book.",
+  "recommendationsFailed": "Could not load recommendations. Retry",
+  "actionFailed": "Something went wrong. Please try again.",
+  "chapterCount": "{count} chapters",
+  "@chapterCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  }
 }

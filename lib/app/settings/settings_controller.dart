@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../core/providers/core_providers.dart';
-import '../../l10n/app_localizations.dart';
 import 'app_settings.dart';
 import 'settings_repository.dart';
 
@@ -24,14 +23,6 @@ class SettingsController extends _$SettingsController {
 
   @override
   AppSettings build() => ref.watch(initialAppSettingsProvider);
-
-  /// Null follows system locale, including changes while the app is running.
-  Future<void> setLocale(Locale? locale) {
-    if (locale != null && !AppLocalizations.supportedLocales.contains(locale)) {
-      throw ArgumentError.value(locale, 'locale', 'Unsupported app locale.');
-    }
-    return _update((settings) => settings.withLocale(locale));
-  }
 
   Future<void> setThemeMode(ThemeMode mode) =>
       _update((settings) => settings.withThemeMode(mode));

@@ -1,6 +1,6 @@
 # Novelverse
 
-Flutter Android / iOS 基础工程。当前只包含基础设施和显示应用名称的占位页，没有产品业务逻辑。
+Flutter Android / iOS 小说 App。目前包含基础架构、原型版书籍详情页，以及从 `readers` 迁入的完整阅读器。默认启动进入测试书籍详情页。
 
 ## 环境与启动
 
@@ -31,7 +31,7 @@ VS Code 已提供 dev / staging / prod 启动配置。
 | 数据库 | Drift + SQLite，后台连接、环境隔离、schema 快照 |
 | 简单配置 | SharedPreferencesAsync |
 | 敏感信息 | flutter_secure_storage |
-| 多语言 | Flutter gen-l10n + ARB + intl |
+| 英文文案 | Flutter gen-l10n + ARB + intl，仅英文 |
 | 路由 | go_router |
 | 日志 | logger，通过 AppLogger 统一使用 |
 | JSON | json_serializable + build_runner |
@@ -55,6 +55,9 @@ lib/
     network/                    # HTTP 传输、异常转换
     providers/                  # 基础服务依赖
     storage/                    # SP、安全存储
+  features/
+    books/                      # 详情、推荐、收藏、模拟 API 与正文缓存
+    reader/                     # 双模式阅读、分页、设置、阅读进度
   l10n/                         # ARB 与生成的本地化代码
 config/                         # 三环境的编译配置
 drift_schemas/                 # 已提交的数据库历史 schema
@@ -63,7 +66,57 @@ test/                          # 基础设施和应用接线测试
 
 后续业务放在 `lib/features/<feature>/`，按需要增加 `data/`、`application/`、`presentation/`；复杂业务再增加 `domain/`。页面通过 Provider / Repository 使用服务，网络基础层不依赖用户管理、路由或业务模型。
 
-目前没有预建业务表、登录流程、接口加密协议或业务响应结构。外部 SDK 需要时再接入启动流程。
+当前业务表仅包含阅读进度和收藏。模拟数据通过 BookApi 接口提供；登录、支付和真实服务端协议尚未接入。
+
+## 书籍详情与阅读器
+
+### 真实测试书籍与接口
+
+真实正文来自参考项目 `readers`：**Claimed By The Ruthless Alpha**，作者 **Ofotokun Bridget**。203 章正文总计约 1.17 MB，平均每章约 5,700 字符，最大一章约 11,400 字符。原始章节文件完整保留在 assets；展示时仅移除与目录匹配的独立标题行，统一换行。
+
+阅读量、收藏量、评分和六本推荐为模拟数据。详情、书单及推荐 JSON 的 `coverUrl` 都使用提供的 HTTPS 封面地址，组件按真实网络方式加载，加载中、缺图及失败时显示简单占位图，不再打包或裁切原型封面素材。推荐 JSON 的 `targetBookId` 暂时指向这本真实测试书；未提供该字段时使用推荐书自身 ID，页面不指定测试书 ID。
+
+`MockBookApi` 通过本地 JSON 和章节文件模拟服务端响应，每个接口延迟 300 ms；封面图片实际通过 HTTPS 加载。书名、简介、统计、推荐、封面地址与推荐跳转目标均来自响应数据，替换 `bookApiProvider` 的实现即可接入真实 API。
+
+| 接口 | 返回 |
+| --- | --- |
+| `GET /books/{id}` | 基本信息、简介、标签、统计、目录版本、**完整第一章** |
+| `GET /books/{id}/recommendations` | 独立推荐列表，可独立失败和重试 |
+| `GET /books/{id}/chapters` | 目录 ID、顺序、标题、正文版本，**不含各章正文** |
+| `GET /books/{id}/chapters/{chapterId}` | 单章正文 |
+
+详情附带的第一章直接进入同一正文缓存，阅读器不再重复请求。详情布局对照提供的 HTML 原型：紧凑封面与信息、不显示作者、单行小标签、阅读统计、最多四行简介（Read more / Show less）、半章预览、渐隐 Continue Reading、三列两行推荐和固定底部操作栏。浅紫背景随书籍头部滚动，正文区使用统一暖白纸色。顶栏底色和书名随滚动距离渐显，状态栏透明并使用深色图标，避免 Android 顶部灰色遮罩和硬切换。页面按字素取约一半并尽量停在段落或单词末尾。
+
+Start Free Reading 和 Continue Reading 都恢复上次阅读位置；没有记录时从第一章开始。Library 按钮持久化切换收藏，分享按钮打开系统分享面板。
+
+### 跳章与进度
+
+- 路由 `/books/claimed-ruthless-alpha/read` 恢复进度。
+- 路由 `/books/claimed-ruthless-alpha/read?chapter=alpha-150` 直接从第 150 章开始，显式章节优先于已存进度。
+- 阅读器中点屏幕中央显示工具栏，可打开目录并直接选章。
+- 左右分页、上下滚动、字号、行距、阅读器独立夜间模式均保留；阅读设置存 SP。
+- 亮度通过迁入的 Android / iOS 原生通道控制，退出阅读或应用切后台时还原。
+
+进度以书籍 ID 为主键存入 Drift：稳定章节 ID、章节顺序、正文版本、**章内 UTF-16 字符偏移**和更新时间。分页页码不作为持久化坐标，避免改字号或屏幕尺寸后失效。目录插入章节后按 ID 找回目标；正文版本改变时重置到该章开头。
+
+阅读期间最多每 500 ms 合并写入一次；退出、切后台立即 flush；写入串行，旧请求不会覆盖新进度。尚未加载或加载失败的目标章节不会覆盖最后有效记录。阅读位置 Provider 离页自动释放，重进和重启从数据库恢复。
+
+### 分层缓存
+
+| 层 | 默认限制 | 保存内容 |
+| --- | --- | --- |
+| 阅读界面 | 当前章及前后各一章 | 正文与滚动段落窗口 |
+| 正文内存 LRU | 最多 10 章，约 1 MiB 文本预算 | 已请求的章节 |
+| 分页结果 | 最近 10 章，同一布局条件 | 分页边界；字号或尺寸变化时重排 |
+| 目录内存 | 最近 3 份目录 | 章节元数据 |
+| 文件缓存 | 每环境最多 50 MiB / 5,000 项，30 天未访问过期 | 版本化目录和正文 JSON |
+| Drift | 不随正文缓存淘汰 | 阅读进度、收藏 |
+
+进入目标章节先请求并显示它，之后才预取下一章和上一章。2000 章目录也只加载目标及相邻正文，目录列表按可见项构建。相同章节并发请求合并，预取失败不会阻塞当前章，返回已读章优先复用缓存。
+
+磁盘缓存位于应用缓存目录 `reader_books_v2_<env>`，Key 包含书籍、章节及版本并以 SHA-256 生成文件名。原子写入、LRU 淘汰、过期清理及条目上限共同限制空间。系统删除缓存后重新获取正文，进度与收藏仍保留在应用支持目录的数据库中。文件缓存写入失败不影响已经取得的正文。
+
+依当前真实数据量，2000 个同等大小章节约十余 MB，无需一次加载或排版整本书；50 MiB 是可调整的初始缓存预算，不是主动下载整本书。
 
 ## 环境配置
 
@@ -97,13 +150,11 @@ flutter run --dart-define-from-file=config/dev.json --dart-define=API_BASE_URL=h
 
 ```dart
 final settings = ref.read(settingsControllerProvider.notifier);
-await settings.setLocale(const Locale('zh'));
-await settings.setLocale(null); // 跟随系统，运行期间系统切换也会生效
 await settings.setThemeMode(ThemeMode.dark);
 await settings.setThemeMode(ThemeMode.system);
 ```
 
-语言和主题在显示主界面前读取，默认均跟随系统。设置写入按顺序执行，持久化成功后更新状态；失败会返回异常，后续写入仍可继续。
+应用固定为英文，不提供语言切换；旧版本存储的语言字段会忽略，保留主题设置。主题在显示主界面前读取，默认跟随系统。设置写入按顺序执行，持久化成功后更新状态；失败会返回异常，后续写入仍可继续。
 
 ## 网络与异常
 
@@ -133,7 +184,7 @@ final data = await ref.read(apiClientProvider).get<Map<String, dynamic>>(
 
 `secureStoreProvider` 提供 `read`、`write`、`delete`、`clear`，用于 Token 等敏感字符串。Android 已排除加密值与包裹密钥文件的云备份 / 设备迁移，iOS 已关联 Keychain entitlement。Keychain 数据可能跨卸载保留，首次安装和退出登录如何清理需由后续账户流程决定。
 
-`appDatabaseProvider` 延迟创建数据库，文件放在应用支持目录，连接由 Drift 在后台管理。当前 schemaVersion 为 1，**没有业务表**，外键约束已开启。测试可用 `AppDatabase(NativeDatabase.memory())` 注入内存数据库。
+`appDatabaseProvider` 延迟创建数据库，文件放在应用支持目录，连接由 Drift 在后台管理。当前 schemaVersion 为 2，包含 `reading_progress_entries` 和 `library_entries`，外键约束已开启。空数据库 v1 到 v2 的升级使用版本化 schema，并有迁移验证。测试可用 `AppDatabase(NativeDatabase.memory())` 注入内存数据库。
 
 增加或修改表时：
 
@@ -142,9 +193,9 @@ final data = await ref.read(apiClientProvider).get<Map<String, dynamic>>(
 3. 实现生成步骤要求的升级逻辑，补充迁移和数据完整性测试。
 4. 执行生成与检查。不能通过删除用户数据库替代正式迁移。
 
-## 多语言与主题
+## 英文文案与主题
 
-当前 ARB 包含英文、简体中文（`zh`）、繁体中文（`zh-Hant`）。新增文案先修改 `app_en.arb`，再补其他语言；新增语言以生成的 `AppLocalizations.supportedLocales` 为准。
+当前产品仅支持英文，文案统一维护在 `app_en.arb`。主应用和启动失败页显式指定英文，系统语言变化不会改变界面语言。保留 ARB 生成流程以集中维护文案；iOS `CFBundleLocalizations` 也仅声明英文。
 
 ```sh
 flutter gen-l10n
@@ -171,7 +222,7 @@ make check                     # 格式检查、静态分析、测试
 
 生成文件与数据库 schema 快照应和源代码一起提交，不能手工修改生成文件。改完代码后，可执行 `dart format lib test`。
 
-测试覆盖网络解析 / HTTP / 超时 / 取消、日志敏感值排除与级别过滤、资源释放、SP / 安全存储的环境隔离、数据库初始化 / 事务回滚、设置并发写入 / 失败恢复，以及路由 / 明暗主题 / 系统语言切换。
+测试覆盖网络解析 / HTTP / 超时 / 取消、日志敏感值排除与级别过滤、资源释放、SP / 安全存储的环境隔离、数据库初始化 / 事务回滚、设置并发写入 / 失败恢复，以及路由 / 明暗主题 / 非英文系统下保持英文。
 
 平台编译：
 

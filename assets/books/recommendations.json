@@ -1,0 +1,58 @@
+{
+  "items": [
+    {
+      "id": "recommendation-1",
+      "title": "When Worlds Meet",
+      "author": "Novelverse",
+      "chapterCount": 128,
+      "coverUrl": "https://www.novaanovel.com/covers/Five%20Princes%2C%20One%20Mortal%20Vote.jpg",
+      "rating": 4.9,
+      "targetBookId": "claimed-ruthless-alpha"
+    },
+    {
+      "id": "recommendation-2",
+      "title": "Beyond the Last Page",
+      "author": "Novelverse",
+      "chapterCount": 140,
+      "coverUrl": "https://www.novaanovel.com/covers/Five%20Princes%2C%20One%20Mortal%20Vote.jpg",
+      "rating": 4.7,
+      "targetBookId": "claimed-ruthless-alpha"
+    },
+    {
+      "id": "recommendation-3",
+      "title": "The Hidden Promise",
+      "author": "Novelverse",
+      "chapterCount": 152,
+      "coverUrl": "https://www.novaanovel.com/covers/Five%20Princes%2C%20One%20Mortal%20Vote.jpg",
+      "rating": 4.8,
+      "targetBookId": "claimed-ruthless-alpha"
+    },
+    {
+      "id": "recommendation-4",
+      "title": "A New Beginning",
+      "author": "Novelverse",
+      "chapterCount": 164,
+      "coverUrl": "https://www.novaanovel.com/covers/Five%20Princes%2C%20One%20Mortal%20Vote.jpg",
+      "rating": 4.8,
+      "targetBookId": "claimed-ruthless-alpha"
+    },
+    {
+      "id": "recommendation-5",
+      "title": "Wolves of Winter",
+      "author": "Novelverse",
+      "chapterCount": 176,
+      "coverUrl": "https://www.novaanovel.com/covers/Five%20Princes%2C%20One%20Mortal%20Vote.jpg",
+      "rating": 4.7,
+      "targetBookId": "claimed-ruthless-alpha"
+    },
+    {
+      "id": "recommendation-6",
+      "title": "The Alpha’s Lost Oath",
+      "author": "Novelverse",
+      "chapterCount": 188,
+      "coverUrl": "https://www.novaanovel.com/covers/Five%20Princes%2C%20One%20Mortal%20Vote.jpg",
+      "rating": 4.8,
+      "targetBookId": "claimed-ruthless-alpha"
+    }
+  ]
+}
