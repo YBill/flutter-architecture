@@ -798,11 +798,391 @@ class LibraryEntriesCompanion extends UpdateCompanion<LibraryEntry> {
   }
 }
 
+class $ChapterBookmarkEntriesTable extends ChapterBookmarkEntries
+    with TableInfo<$ChapterBookmarkEntriesTable, ChapterBookmarkEntry> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $ChapterBookmarkEntriesTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _bookIdMeta = const VerificationMeta('bookId');
+  @override
+  late final GeneratedColumn<String> bookId = GeneratedColumn<String>(
+    'book_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _chapterIdMeta = const VerificationMeta(
+    'chapterId',
+  );
+  @override
+  late final GeneratedColumn<String> chapterId = GeneratedColumn<String>(
+    'chapter_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _chapterIndexMeta = const VerificationMeta(
+    'chapterIndex',
+  );
+  @override
+  late final GeneratedColumn<int> chapterIndex = GeneratedColumn<int>(
+    'chapter_index',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _chapterTitleMeta = const VerificationMeta(
+    'chapterTitle',
+  );
+  @override
+  late final GeneratedColumn<String> chapterTitle = GeneratedColumn<String>(
+    'chapter_title',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _savedAtMeta = const VerificationMeta(
+    'savedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> savedAt = GeneratedColumn<DateTime>(
+    'saved_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    bookId,
+    chapterId,
+    chapterIndex,
+    chapterTitle,
+    savedAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'chapter_bookmark_entries';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<ChapterBookmarkEntry> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('book_id')) {
+      context.handle(
+        _bookIdMeta,
+        bookId.isAcceptableOrUnknown(data['book_id']!, _bookIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_bookIdMeta);
+    }
+    if (data.containsKey('chapter_id')) {
+      context.handle(
+        _chapterIdMeta,
+        chapterId.isAcceptableOrUnknown(data['chapter_id']!, _chapterIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_chapterIdMeta);
+    }
+    if (data.containsKey('chapter_index')) {
+      context.handle(
+        _chapterIndexMeta,
+        chapterIndex.isAcceptableOrUnknown(
+          data['chapter_index']!,
+          _chapterIndexMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_chapterIndexMeta);
+    }
+    if (data.containsKey('chapter_title')) {
+      context.handle(
+        _chapterTitleMeta,
+        chapterTitle.isAcceptableOrUnknown(
+          data['chapter_title']!,
+          _chapterTitleMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_chapterTitleMeta);
+    }
+    if (data.containsKey('saved_at')) {
+      context.handle(
+        _savedAtMeta,
+        savedAt.isAcceptableOrUnknown(data['saved_at']!, _savedAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_savedAtMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {bookId, chapterId};
+  @override
+  ChapterBookmarkEntry map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return ChapterBookmarkEntry(
+      bookId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}book_id'],
+      )!,
+      chapterId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}chapter_id'],
+      )!,
+      chapterIndex: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}chapter_index'],
+      )!,
+      chapterTitle: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}chapter_title'],
+      )!,
+      savedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}saved_at'],
+      )!,
+    );
+  }
+
+  @override
+  $ChapterBookmarkEntriesTable createAlias(String alias) {
+    return $ChapterBookmarkEntriesTable(attachedDatabase, alias);
+  }
+}
+
+class ChapterBookmarkEntry extends DataClass
+    implements Insertable<ChapterBookmarkEntry> {
+  final String bookId;
+  final String chapterId;
+  final int chapterIndex;
+  final String chapterTitle;
+  final DateTime savedAt;
+  const ChapterBookmarkEntry({
+    required this.bookId,
+    required this.chapterId,
+    required this.chapterIndex,
+    required this.chapterTitle,
+    required this.savedAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['book_id'] = Variable<String>(bookId);
+    map['chapter_id'] = Variable<String>(chapterId);
+    map['chapter_index'] = Variable<int>(chapterIndex);
+    map['chapter_title'] = Variable<String>(chapterTitle);
+    map['saved_at'] = Variable<DateTime>(savedAt);
+    return map;
+  }
+
+  ChapterBookmarkEntriesCompanion toCompanion(bool nullToAbsent) {
+    return ChapterBookmarkEntriesCompanion(
+      bookId: Value(bookId),
+      chapterId: Value(chapterId),
+      chapterIndex: Value(chapterIndex),
+      chapterTitle: Value(chapterTitle),
+      savedAt: Value(savedAt),
+    );
+  }
+
+  factory ChapterBookmarkEntry.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return ChapterBookmarkEntry(
+      bookId: serializer.fromJson<String>(json['bookId']),
+      chapterId: serializer.fromJson<String>(json['chapterId']),
+      chapterIndex: serializer.fromJson<int>(json['chapterIndex']),
+      chapterTitle: serializer.fromJson<String>(json['chapterTitle']),
+      savedAt: serializer.fromJson<DateTime>(json['savedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'bookId': serializer.toJson<String>(bookId),
+      'chapterId': serializer.toJson<String>(chapterId),
+      'chapterIndex': serializer.toJson<int>(chapterIndex),
+      'chapterTitle': serializer.toJson<String>(chapterTitle),
+      'savedAt': serializer.toJson<DateTime>(savedAt),
+    };
+  }
+
+  ChapterBookmarkEntry copyWith({
+    String? bookId,
+    String? chapterId,
+    int? chapterIndex,
+    String? chapterTitle,
+    DateTime? savedAt,
+  }) => ChapterBookmarkEntry(
+    bookId: bookId ?? this.bookId,
+    chapterId: chapterId ?? this.chapterId,
+    chapterIndex: chapterIndex ?? this.chapterIndex,
+    chapterTitle: chapterTitle ?? this.chapterTitle,
+    savedAt: savedAt ?? this.savedAt,
+  );
+  ChapterBookmarkEntry copyWithCompanion(ChapterBookmarkEntriesCompanion data) {
+    return ChapterBookmarkEntry(
+      bookId: data.bookId.present ? data.bookId.value : this.bookId,
+      chapterId: data.chapterId.present ? data.chapterId.value : this.chapterId,
+      chapterIndex: data.chapterIndex.present
+          ? data.chapterIndex.value
+          : this.chapterIndex,
+      chapterTitle: data.chapterTitle.present
+          ? data.chapterTitle.value
+          : this.chapterTitle,
+      savedAt: data.savedAt.present ? data.savedAt.value : this.savedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ChapterBookmarkEntry(')
+          ..write('bookId: $bookId, ')
+          ..write('chapterId: $chapterId, ')
+          ..write('chapterIndex: $chapterIndex, ')
+          ..write('chapterTitle: $chapterTitle, ')
+          ..write('savedAt: $savedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode =>
+      Object.hash(bookId, chapterId, chapterIndex, chapterTitle, savedAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is ChapterBookmarkEntry &&
+          other.bookId == this.bookId &&
+          other.chapterId == this.chapterId &&
+          other.chapterIndex == this.chapterIndex &&
+          other.chapterTitle == this.chapterTitle &&
+          other.savedAt == this.savedAt);
+}
+
+class ChapterBookmarkEntriesCompanion
+    extends UpdateCompanion<ChapterBookmarkEntry> {
+  final Value<String> bookId;
+  final Value<String> chapterId;
+  final Value<int> chapterIndex;
+  final Value<String> chapterTitle;
+  final Value<DateTime> savedAt;
+  final Value<int> rowid;
+  const ChapterBookmarkEntriesCompanion({
+    this.bookId = const Value.absent(),
+    this.chapterId = const Value.absent(),
+    this.chapterIndex = const Value.absent(),
+    this.chapterTitle = const Value.absent(),
+    this.savedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  ChapterBookmarkEntriesCompanion.insert({
+    required String bookId,
+    required String chapterId,
+    required int chapterIndex,
+    required String chapterTitle,
+    required DateTime savedAt,
+    this.rowid = const Value.absent(),
+  }) : bookId = Value(bookId),
+       chapterId = Value(chapterId),
+       chapterIndex = Value(chapterIndex),
+       chapterTitle = Value(chapterTitle),
+       savedAt = Value(savedAt);
+  static Insertable<ChapterBookmarkEntry> custom({
+    Expression<String>? bookId,
+    Expression<String>? chapterId,
+    Expression<int>? chapterIndex,
+    Expression<String>? chapterTitle,
+    Expression<DateTime>? savedAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (bookId != null) 'book_id': bookId,
+      if (chapterId != null) 'chapter_id': chapterId,
+      if (chapterIndex != null) 'chapter_index': chapterIndex,
+      if (chapterTitle != null) 'chapter_title': chapterTitle,
+      if (savedAt != null) 'saved_at': savedAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  ChapterBookmarkEntriesCompanion copyWith({
+    Value<String>? bookId,
+    Value<String>? chapterId,
+    Value<int>? chapterIndex,
+    Value<String>? chapterTitle,
+    Value<DateTime>? savedAt,
+    Value<int>? rowid,
+  }) {
+    return ChapterBookmarkEntriesCompanion(
+      bookId: bookId ?? this.bookId,
+      chapterId: chapterId ?? this.chapterId,
+      chapterIndex: chapterIndex ?? this.chapterIndex,
+      chapterTitle: chapterTitle ?? this.chapterTitle,
+      savedAt: savedAt ?? this.savedAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (bookId.present) {
+      map['book_id'] = Variable<String>(bookId.value);
+    }
+    if (chapterId.present) {
+      map['chapter_id'] = Variable<String>(chapterId.value);
+    }
+    if (chapterIndex.present) {
+      map['chapter_index'] = Variable<int>(chapterIndex.value);
+    }
+    if (chapterTitle.present) {
+      map['chapter_title'] = Variable<String>(chapterTitle.value);
+    }
+    if (savedAt.present) {
+      map['saved_at'] = Variable<DateTime>(savedAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ChapterBookmarkEntriesCompanion(')
+          ..write('bookId: $bookId, ')
+          ..write('chapterId: $chapterId, ')
+          ..write('chapterIndex: $chapterIndex, ')
+          ..write('chapterTitle: $chapterTitle, ')
+          ..write('savedAt: $savedAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   late final $ReadingProgressEntriesTable readingProgressEntries =
       $ReadingProgressEntriesTable(this);
   late final $LibraryEntriesTable libraryEntries = $LibraryEntriesTable(this);
+  late final $ChapterBookmarkEntriesTable chapterBookmarkEntries =
+      $ChapterBookmarkEntriesTable(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -810,5 +1190,6 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   List<DatabaseSchemaEntity> get allSchemaEntities => [
     readingProgressEntries,
     libraryEntries,
+    chapterBookmarkEntries,
   ];
 }

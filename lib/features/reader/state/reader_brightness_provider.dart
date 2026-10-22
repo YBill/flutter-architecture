@@ -79,29 +79,6 @@ class ReaderBrightnessNotifier extends Notifier<ReaderBrightnessState>
     }
   }
 
-  void useSystemBrightness() {
-    if (_closed || !state.available) return;
-    final revision = ++_revision;
-    state = ReaderBrightnessState(value: state.value);
-    unawaited(_useSystem(revision));
-  }
-
-  Future<void> _useSystem(int revision) async {
-    try {
-      await _driver.reset();
-      if (!_isCurrent(revision)) return;
-      _hasOverride = false;
-      await _load(revision);
-    } catch (_) {
-      if (_isCurrent(revision)) {
-        state = ReaderBrightnessState(
-          value: state.value,
-          error: 'Could not restore system brightness. Please close the reader and try again.',
-        );
-      }
-    }
-  }
-
   Future<void> _resetSafely() async {
     try {
       await _driver.reset();

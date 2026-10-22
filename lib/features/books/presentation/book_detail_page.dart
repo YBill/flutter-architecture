@@ -3,6 +3,9 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../../../app/theme/app_theme.dart';
+
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:share_plus/share_plus.dart';
@@ -14,7 +17,7 @@ import '../domain/chapter_preview.dart';
 import 'widgets/book_cover.dart';
 
 const _ink = Color(0xFF201734);
-const _purple = Color(0xFF6A48DF);
+const _purple = AppTheme.primaryColor;
 const _cream = Color(0xFFFFFDFA);
 const _muted = Color(0xFF85808F);
 const _detailOverlay = SystemUiOverlayStyle(
@@ -105,6 +108,7 @@ class _BookDetailPageState extends ConsumerState<BookDetailPage> {
           brightness: Brightness.light,
           colorScheme: ColorScheme.fromSeed(
             seedColor: _purple,
+            primary: _purple,
             surface: _cream,
           ),
           textTheme: ThemeData.light().textTheme.apply(
@@ -782,7 +786,7 @@ class _ChapterPreview extends StatelessWidget {
             key: const ValueKey('continue-reading'),
             onPressed: onRead,
             style: TextButton.styleFrom(
-              foregroundColor: const Color(0xFF8051C9),
+              foregroundColor: _purple,
               minimumSize: const Size(0, 42),
               padding: const EdgeInsets.fromLTRB(18, 11, 18, 8),
               textStyle: const TextStyle(

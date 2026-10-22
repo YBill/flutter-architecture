@@ -124,7 +124,8 @@ class _ReaderPageState extends ConsumerState<ReaderPage>
           : catalog.chapters.indexWhere((c) => c.id == entry);
       if (target < 0) throw StateError('Chapter not found');
       _activate(target, offset: entry == null ? saved.charOffset : 0);
-    } catch (error) {
+    } catch (error, stack) {
+      _logger.error('Could not open reader.', error: error, stackTrace: stack);
       if (mounted && epoch == _epoch) setState(() => _openError = error);
     }
   }
@@ -301,25 +302,82 @@ class _ReaderPageState extends ConsumerState<ReaderPage>
               : Stack(
                   children: [
                     Positioned.fill(
-                      child: _window == null
-                          ? GestureDetector(
-                              behavior: HitTestBehavior.opaque,
-                              onTap: _toggleMenu,
-                              child: _chapterStatus(_targetIndex),
-                            )
-                          : mode == ReaderMode.paged
-                          ? PagedReader(
-                              key: ValueKey(widget.bookId),
-                              book: _window!,
-                              onToggleMenu: _toggleMenu,
-                              boundaryBuilder: _chapterStatus,
-                            )
-                          : ScrollReader(
-                              key: ValueKey(widget.bookId),
-                              book: _window!,
-                              onToggleMenu: _toggleMenu,
-                              boundaryBuilder: _chapterStatus,
+                      child: Column(
+                        children: [
+                          SafeArea(
+                            bottom: false,
+                            child: ExcludeSemantics(
+                              excluding: _menuVisible,
+                              child: ReaderChapterBar(
+                                chapterTitle:
+                                    catalog.chapters[_targetIndex].title,
+                                onToggleMenu: _toggleMenu,
+                              ),
                             ),
+                          ),
+                          Expanded(
+                            child: MediaQuery.removePadding(
+                              context: context,
+                              removeTop: true,
+                              child: Stack(
+                                children: [
+                                  Positioned.fill(
+                                    child: _window == null
+                                        ? GestureDetector(
+                                            behavior: HitTestBehavior.opaque,
+                                            onTap: _toggleMenu,
+                                            child: _chapterStatus(_targetIndex),
+                                          )
+                                        : mode == ReaderMode.paged
+                                        ? PagedReader(
+                                            key: ValueKey(widget.bookId),
+                                            book: _window!,
+                                            onToggleMenu: _toggleMenu,
+                                            boundaryBuilder: _chapterStatus,
+                                          )
+                                        : ScrollReader(
+                                            key: ValueKey(widget.bookId),
+                                            book: _window!,
+                                            onToggleMenu: _toggleMenu,
+                                            boundaryBuilder: _chapterStatus,
+                                          ),
+                                  ),
+                                  if (_menuVisible)
+                                    Positioned(
+                                      right: 14,
+                                      bottom:
+                                          MediaQuery.paddingOf(context).bottom +
+                                          ReaderBottomBar.height +
+                                          16,
+                                      child: ReaderSaveButton(
+                                        book: _detail!.summary,
+                                      ),
+                                    ),
+                                  Positioned(
+                                    bottom: 0,
+                                    left: 0,
+                                    right: 0,
+                                    child: IgnorePointer(
+                                      ignoring: !_menuVisible,
+                                      child: AnimatedSlide(
+                                        offset: _menuVisible
+                                            ? Offset.zero
+                                            : const Offset(0, 1),
+                                        duration: const Duration(
+                                          milliseconds: 180,
+                                        ),
+                                        child: ReaderBottomBar(
+                                          catalog: catalog,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                     Positioned(
                       top: 0,
@@ -331,25 +389,14 @@ class _ReaderPageState extends ConsumerState<ReaderPage>
                           offset: _menuVisible
                               ? Offset.zero
                               : const Offset(0, -1),
-                          duration: const Duration(milliseconds: 200),
-                          child: ReaderTopBar(
-                            chapterTitle: catalog.chapters[_targetIndex].title,
+                          duration: const Duration(milliseconds: 180),
+                          child: SafeArea(
+                            bottom: false,
+                            child: ReaderTopBar(
+                              book: _detail!.summary,
+                              chapter: catalog.chapters[_targetIndex],
+                            ),
                           ),
-                        ),
-                      ),
-                    ),
-                    Positioned(
-                      bottom: 0,
-                      left: 0,
-                      right: 0,
-                      child: IgnorePointer(
-                        ignoring: !_menuVisible,
-                        child: AnimatedSlide(
-                          offset: _menuVisible
-                              ? Offset.zero
-                              : const Offset(0, 1),
-                          duration: const Duration(milliseconds: 200),
-                          child: ReaderBottomBar(catalog: catalog),
                         ),
                       ),
                     ),

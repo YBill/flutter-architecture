@@ -2,6 +2,13 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:novelverse/core/config/app_config.dart';
 
 void main() {
+  test('plain debug launch connects to the local API by default', () {
+    final config = AppConfig.fromEnvironment();
+    expect(config.environment, AppEnvironment.dev);
+    expect(config.apiBaseUri.toString(), 'http://127.0.0.1:8787/api/v1/');
+    expect(config.enableHttpLogging, isTrue);
+  });
+
   test('supports starting before the backend is configured', () {
     final config = AppConfig.fromValues();
     expect(config.environment, AppEnvironment.dev);

@@ -293,15 +293,7 @@ class _PagedReaderState extends ConsumerState<PagedReader> {
     Locale? locale,
   ) {
     final tp = TextPainter(
-      text: TextSpan(
-        text: title,
-        style: TextStyle(
-          inherit: false,
-          fontSize: s.fontSize * 1.5,
-          fontWeight: FontWeight.w600,
-          height: 1.3,
-        ),
-      ),
+      text: TextSpan(text: title, style: s.titleStyle),
       textDirection: TextDirection.ltr,
       textScaler: TextScaler.noScaling,
       locale: locale,
@@ -476,13 +468,7 @@ class _PagedReaderState extends ConsumerState<PagedReader> {
                     chapter.title,
                     textDirection: TextDirection.ltr,
                     textScaler: TextScaler.noScaling,
-                    style: TextStyle(
-                      inherit: false,
-                      fontSize: settings.fontSize * 1.5,
-                      height: 1.3,
-                      fontWeight: FontWeight.w600,
-                      color: settings.textColor,
-                    ),
+                    style: settings.titleStyle,
                   ),
                   const SizedBox(height: _titleGap),
                 ],

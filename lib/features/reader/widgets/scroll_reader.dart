@@ -305,13 +305,7 @@ class _ScrollReaderState extends ConsumerState<ScrollReader> {
               .chapters[widget.book.localIndex(entry.chapterIndex)]
               .title,
           textScaler: TextScaler.noScaling,
-          style: TextStyle(
-            inherit: false,
-            fontSize: settings.fontSize * 1.5,
-            height: 1.3,
-            fontWeight: FontWeight.w600,
-            color: settings.textColor,
-          ),
+          style: settings.titleStyle,
         ),
       );
     }

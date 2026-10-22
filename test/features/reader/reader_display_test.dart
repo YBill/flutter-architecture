@@ -85,17 +85,17 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.text('Settings'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Night mode'));
+    await tester.tap(find.byTooltip('Night background'));
     await tester.pumpAndSettle();
     expect(
-      Theme.of(tester.element(find.text('Night mode'))).brightness,
+      Theme.of(tester.element(find.byTooltip('Night background'))).brightness,
       Brightness.dark,
     );
     expect(
       tester
           .widgetList<Material>(
             find.ancestor(
-              of: find.text('Night mode'),
+              of: find.byTooltip('Night background'),
               matching: find.byType(Material),
             ),
           )
@@ -132,10 +132,8 @@ void main() {
     tester.widget<Slider>(find.byType(Slider)).onChanged!(0.25);
     await tester.pumpAndSettle();
     expect(currentBrightness, 0.25);
-    await tester.tap(find.text('Use system'));
-    await tester.pumpAndSettle();
-    expect(currentBrightness, 0.72);
-    expect(container.read(readerBrightnessProvider).followSystem, isTrue);
+    expect(find.text('Use system'), findsNothing);
+    expect(container.read(readerBrightnessProvider).followSystem, isFalse);
     tester.widget<Slider>(find.byType(Slider)).onChanged!(0.4);
     await tester.pumpAndSettle();
     await tester.binding.handlePopRoute(); // 只关闭Settings面板
@@ -175,22 +173,26 @@ void main() {
       originalOverlay?.systemNavigationBarColor,
     );
 
+    // Re-entering reads the current system brightness, rather than the
+    // previous reader override or a previously captured system value.
+    currentBrightness = 0.61;
     await tester.tap(find.byKey(const ValueKey('start-reading')));
     await tester.pumpAndSettle();
-    expect(currentBrightness, 0.72);
+    expect(currentBrightness, 0.61);
     expect(container.read(readerBrightnessProvider).followSystem, isTrue);
+    expect(container.read(readerBrightnessProvider).value, 0.61);
     container.read(readerBrightnessProvider.notifier).setBrightness(0.35);
     await tester.pumpAndSettle();
     await tester.tapAt(const Offset(195, 400));
     await tester.pumpAndSettle();
     await tester.tap(find.byTooltip('Back to book'));
     await tester.pumpAndSettle();
-    expect(currentBrightness, 0.72);
+    expect(currentBrightness, 0.61);
     expect(find.byType(BookDetailPage), findsOneWidget);
     await tester.binding.handlePopRoute();
     await tester.pumpAndSettle();
     expect(find.byType(BookDetailPage), findsOneWidget);
-    expect(calls.where((method) => method == 'resetBrightness'), hasLength(3));
+    expect(calls.where((method) => method == 'resetBrightness'), hasLength(2));
     expect(tester.takeException(), isNull);
     await tester.pumpWidget(const SizedBox.shrink());
     await tester.pumpAndSettle();

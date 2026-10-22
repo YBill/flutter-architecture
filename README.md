@@ -63,7 +63,7 @@ lib/
 server/                         # 独立 Python HTTP 服务、书籍 JSON 和正文
 tool/                           # HTTP 联调检查脚本
 config/                         # 环境和模拟器地址配置
-drift_schemas/                 # 已提交的数据库历史 schema
+drift_schemas/                 # 首发结构快照，发布后保留后续历史版本
 test/                          # 基础设施和应用接线测试
 ```
 
@@ -96,13 +96,13 @@ Start Free Reading 和 Continue Reading 都恢复上次阅读位置；没有记�
 
 - 路由 `/books/claimed-ruthless-alpha/read` 恢复进度。
 - 路由 `/books/claimed-ruthless-alpha/read?chapter=alpha-150` 直接从第 150 章开始，显式章节优先于已存进度。
-- 阅读器中点屏幕中央显示工具栏，可打开目录并直接选章。
-- 左右分页、上下滚动、字号、行距、阅读器独立夜间模式均保留；阅读设置存 SP。
-- 亮度通过迁入的 Android / iOS 原生通道控制，退出阅读或应用切后台时还原。
+- 阅读器默认在顶部显示当前章节，点屏幕中央显示返回、书名、章节和书签；底部提供 Contents / Theme / Settings，右下角爱心与详情页共用收藏状态。目录惰性加载并定位当前章，已加书签的章节显示书签标记。
+- 左右分页、上下滚动、字号、行距和独立亮度设置均保留。Background 提供 Paper / Cream / Green / Blue / Night；Theme 在 Paper 与 Night 间切换，正文、工具栏、弹层和系统栏跟随配色，设置存 SP。产品主色为 `#8051C9`。
+- 亮度通过 Android / iOS 原生通道控制，仅在当前阅读页临时生效，不写入 SP；退出阅读后还原，重新进入读取当前系统亮度。关闭设置面板不影响当前阅读亮度。字号、行距、翻页模式和背景保存到 SP，重启 App 后恢复。
 
 进度以书籍 ID 为主键存入 Drift：稳定章节 ID、章节顺序、正文版本、**章内 UTF-16 字符偏移**和更新时间。分页页码不作为持久化坐标，避免改字号或屏幕尺寸后失效。目录插入章节后按 ID 找回目标；正文版本改变时重置到该章开头。
 
-阅读期间最多每 500 ms 合并写入一次；退出、切后台立即 flush；写入串行，旧请求不会覆盖新进度。尚未加载或加载失败的目标章节不会覆盖最后有效记录。阅读位置 Provider 离页自动释放，重进和重启从数据库恢复。
+阅读期间最多每 500 ms 合并写入一次；退出、切后台立即 flush；写入串行，旧请求不会覆盖新进度。尚未加载或加载失败的目标章节不会覆盖最后有效记录。阅读位置 Provider 离页自动释放，重进和重启从数据库恢复。章节书签以 `(bookId, chapterId)` 为联合主键，附带章节标题、序号及保存时间；使用服务端稳定章节 ID，目录重新排序不会错绑。书签和收藏独立保存在 SQLite，切换、退出或重启后保留。
 
 ### 分层缓存
 
@@ -127,7 +127,9 @@ Start Free Reading 和 Continue Reading 都恢复上次阅读位置；没有记�
 | --- | --- |
 | `APP_ENV` | `dev`（默认）、`staging`、`prod` |
 | `API_BASE_URL` | 可带路径的 HTTP(S) 基地址，dev 指向本地服务；staging / prod 待配置 |
-| `HTTP_LOG_ENABLED` | 是否记录 HTTP 元数据，默认 false；prod / Release 强制关闭 |
+| `HTTP_LOG_ENABLED` | 是否记录 HTTP 元数据，dev Debug 默认 true，其余默认 false；prod / Release 强制关闭 |
+
+dev Debug 未传 `API_BASE_URL` 时默认使用 `http://127.0.0.1:8787/api/v1/`，直接运行 `main.dart` 也能连接本地服务；显式配置的地址优先，Profile / Release、staging / prod 不使用该默认地址。
 
 开发服务通过 `make server` 启动。`config/dev.json` 使用回环地址；Android USB 真机通过 `make android-reverse` 映射端口，Android 模拟器使用 `config/dev_android_emulator.json`。完整联调说明见 [server/README.md](server/README.md)。编辑 `config/*.json` 可切换实际 API 地址，也可以临时覆盖单个参数：
 
@@ -187,9 +189,9 @@ final data = await ref.read(apiClientProvider).get<Map<String, dynamic>>(
 
 `secureStoreProvider` 提供 `read`、`write`、`delete`、`clear`，用于 Token 等敏感字符串。Android 已排除加密值与包裹密钥文件的云备份 / 设备迁移，iOS 已关联 Keychain entitlement。Keychain 数据可能跨卸载保留，首次安装和退出登录如何清理需由后续账户流程决定。
 
-`appDatabaseProvider` 延迟创建数据库，文件放在应用支持目录，连接由 Drift 在后台管理。当前 schemaVersion 为 2，包含 `reading_progress_entries` 和 `library_entries`，外键约束已开启。空数据库 v1 到 v2 的升级使用版本化 schema，并有迁移验证。测试可用 `AppDatabase(NativeDatabase.memory())` 注入内存数据库。
+`appDatabaseProvider` 延迟创建数据库，文件放在应用支持目录，连接由 Drift 在后台管理。当前为未发布的首发 schemaVersion 1，直接创建 `reading_progress_entries`（阅读进度）、`library_entries`（收藏）和 `chapter_bookmark_entries`（章节书签），外键约束已开启。本次重置了开发阶段的历史结构，旧开发包需卸载重装。测试可用 `AppDatabase(NativeDatabase.memory())` 注入内存数据库。
 
-增加或修改表时：
+正式发布后，如需调整表结构：
 
 1. 修改表定义和数据库注册，并递增 `schemaVersion`。
 2. 执行 `make migrations`，保留历史 schema 快照。

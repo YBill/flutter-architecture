@@ -8,11 +8,24 @@ final class AppConfig {
     required this.enableHttpLogging,
   });
 
-  factory AppConfig.fromEnvironment() => AppConfig.fromValues(
-    environment: const String.fromEnvironment('APP_ENV', defaultValue: 'dev'),
-    apiBaseUrl: const String.fromEnvironment('API_BASE_URL'),
-    enableHttpLogging: const bool.fromEnvironment('HTTP_LOG_ENABLED'),
-  );
+  factory AppConfig.fromEnvironment() {
+    const environment = String.fromEnvironment('APP_ENV', defaultValue: 'dev');
+    const configuredUrl = String.fromEnvironment('API_BASE_URL');
+    const debug =
+        !bool.fromEnvironment('dart.vm.product') &&
+        !bool.fromEnvironment('dart.vm.profile');
+    const localDevelopment = debug && environment == 'dev';
+    return AppConfig.fromValues(
+      environment: environment,
+      apiBaseUrl: configuredUrl.isEmpty && localDevelopment
+          ? 'http://127.0.0.1:8787/api/v1/'
+          : configuredUrl,
+      enableHttpLogging: const bool.fromEnvironment(
+        'HTTP_LOG_ENABLED',
+        defaultValue: localDevelopment,
+      ),
+    );
+  }
 
   factory AppConfig.fromValues({
     String environment = 'dev',

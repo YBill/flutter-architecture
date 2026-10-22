@@ -38,7 +38,12 @@ class ReaderSettingsNotifier extends Notifier<ReaderSettings> {
             1.6,
           ),
           mode: ReaderMode.values.byName(json['mode'] as String? ?? 'paged'),
-          isNightMode: json['isNightMode'] as bool? ?? false,
+          background: ReaderBackground.values.firstWhere(
+            (background) => background.name == json['background'],
+            orElse: () => json['isNightMode'] == true
+                ? ReaderBackground.dark
+                : ReaderBackground.paper,
+          ),
         );
       }
     } catch (error, stack) {
@@ -73,7 +78,7 @@ class ReaderSettingsNotifier extends Notifier<ReaderSettings> {
                 'fontSize': settings.fontSize,
                 'lineHeight': settings.lineHeight,
                 'mode': settings.mode.name,
-                'isNightMode': settings.isNightMode,
+                'background': settings.background.name,
               }),
             ),
           )

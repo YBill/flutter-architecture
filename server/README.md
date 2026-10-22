@@ -30,7 +30,7 @@ curl http://127.0.0.1:8787/health
 
 ## App 连接
 
-先启动服务，再在另一个终端运行 App。
+先启动服务，再在另一个终端运行 App。dev Debug 直接运行 `main.dart` 时也默认连接本地回环地址；USB 真机仍需下面的端口映射。
 
 - **iOS 模拟器**：`make run-dev`，使用 `config/dev.json` 的 `http://127.0.0.1:8787/api/v1/`。
 - **Android USB 真机**：`make run-dev-android`。该命令先执行 `adb reverse tcp:8787 tcp:8787`，再启动 App；多设备时加 `DEVICE=<设备ID>`。断开 USB 或重启设备后重新映射。IDE 启动时先运行 `make android-reverse`，再选择 `Novelverse dev (local API)`。

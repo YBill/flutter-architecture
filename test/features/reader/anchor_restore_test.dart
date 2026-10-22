@@ -8,6 +8,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:novelverse/app/app.dart';
 import 'package:novelverse/features/reader/state/reader_providers.dart';
 import 'package:novelverse/features/books/data/book_cache.dart';
+import 'package:novelverse/features/books/data/book_api.dart';
 
 // 单独成文件：Riverpod FutureProvider 在测试间会残留调度帧，
 // 同文件多个 testWidgets 时 pumpAndSettle 互相干扰。
@@ -49,16 +50,27 @@ void main() {
     final container = ProviderScope.containerOf(
       tester.element(find.byType(NovelverseApp)),
     );
+    final anchor = container
+        .read(readerPositionProvider(sampleBookId))
+        .charOffset;
+    final chapterBody = container
+        .read(bookDetailProvider(sampleBookId))
+        .requireValue
+        .firstChapter!
+        .body;
     container
         .read(readerSettingsProvider.notifier)
         .update((s) => s.copyWith(fontSize: 24));
     await tester.pumpAndSettle();
 
-    expect(
-      find.textContaining(firstLineAfterTurn),
-      findsWidgets,
-      reason: '翻页前的页首文字在改字号后仍应显示',
-    );
+    // A long paragraph may span the new page boundary. The original character
+    // must remain inside the displayed page, rather than requiring the whole
+    // previous paragraph to fit at the larger font size.
+    final displayed = currentBodyText();
+    final start = chapterBody.indexOf(displayed);
+    expect(start, greaterThanOrEqualTo(0));
+    expect(start, lessThanOrEqualTo(anchor));
+    expect(start + displayed.length, greaterThan(anchor));
     await tester.pumpWidget(const SizedBox.shrink());
     await tester.pumpAndSettle();
   });

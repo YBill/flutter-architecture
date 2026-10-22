@@ -2,41 +2,54 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../app/theme/app_theme.dart';
 import '../state/reader_providers.dart';
 
-/// 只包住阅读页及其弹层，不改变首页或整个应用的主题。
+/// Reader palettes also wrap modal routes so an open sheet updates immediately.
 class ReaderTheme extends ConsumerWidget {
   const ReaderTheme({super.key, required this.child});
-
   final Widget child;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final night = ref.watch(
-      readerSettingsProvider.select((s) => s.isNightMode),
+    final settings = ref.watch(readerSettingsProvider);
+    final night = settings.isNightMode;
+    final scheme = ColorScheme.fromSeed(
+      seedColor: AppTheme.primaryColor,
+      brightness: night ? Brightness.dark : Brightness.light,
+      primary: AppTheme.primaryColor,
+      surface: settings.surfaceColor,
+      onSurface: settings.textColor,
     );
-    final settings = ref.read(readerSettingsProvider);
-    final overlay =
-        (night ? SystemUiOverlayStyle.light : SystemUiOverlayStyle.dark)
+    return Theme(
+      data: ThemeData(
+        useMaterial3: true,
+        colorScheme: scheme,
+        scaffoldBackgroundColor: settings.backgroundColor,
+        dividerColor: settings.dividerColor,
+        iconTheme: IconThemeData(color: settings.textColor),
+        textTheme: Theme.of(context).textTheme.apply(
+          bodyColor: settings.textColor,
+          displayColor: settings.textColor,
+        ),
+        sliderTheme: SliderThemeData(
+          activeTrackColor: AppTheme.primaryColor,
+          thumbColor: AppTheme.primaryColor,
+          inactiveTrackColor: settings.selectedControlColor,
+          trackHeight: 6,
+        ),
+      ),
+      child: AnnotatedRegion<SystemUiOverlayStyle>(
+        value: (night ? SystemUiOverlayStyle.light : SystemUiOverlayStyle.dark)
             .copyWith(
               statusBarColor: Colors.transparent,
               systemNavigationBarColor: settings.backgroundColor,
               systemNavigationBarIconBrightness: night
                   ? Brightness.light
                   : Brightness.dark,
-            );
-    return Theme(
-      data: ThemeData(
-        useMaterial3: true,
-        scaffoldBackgroundColor: settings.backgroundColor,
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFFE8623D),
-          brightness: night ? Brightness.dark : Brightness.light,
-          surface: settings.surfaceColor,
-        ),
-      ),
-      child: AnnotatedRegion<SystemUiOverlayStyle>(
-        value: overlay,
+              systemStatusBarContrastEnforced: false,
+              systemNavigationBarContrastEnforced: false,
+            ),
         child: Material(color: settings.surfaceColor, child: child),
       ),
     );
