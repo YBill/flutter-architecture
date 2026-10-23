@@ -35,6 +35,11 @@ class _ReaderPageState extends ConsumerState<ReaderPage>
   final _loading = <int, Future<void>>{};
   final _errors = <int, Object>{};
   Book? _window;
+  // Chapter activation and prefetch update only the body. The page shell and
+  // hidden controls must not rebuild on a scrolling chapter boundary.
+  final _contentRevision = ValueNotifier<int>(0);
+
+  void _refreshContent() => _contentRevision.value++;
 
   @override
   void initState() {
@@ -64,6 +69,7 @@ class _ReaderPageState extends ConsumerState<ReaderPage>
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     _flushProgress();
+    _contentRevision.dispose();
     super.dispose();
   }
 
@@ -124,6 +130,7 @@ class _ReaderPageState extends ConsumerState<ReaderPage>
           : catalog.chapters.indexWhere((c) => c.id == entry);
       if (target < 0) throw StateError('Chapter not found');
       _activate(target, offset: entry == null ? saved.charOffset : 0);
+      setState(() {});
     } catch (error, stack) {
       _logger.error('Could not open reader.', error: error, stackTrace: stack);
       if (mounted && epoch == _epoch) setState(() => _openError = error);
@@ -150,7 +157,7 @@ class _ReaderPageState extends ConsumerState<ReaderPage>
           .update(index, fromEnd ? end : offset);
     }
     _rebuildWindow();
-    setState(() {});
+    _refreshContent();
     unawaited(_loadChapter(index));
     if (_loaded.containsKey(index)) _prefetchAfterFrame(index);
   }
@@ -184,11 +191,12 @@ class _ReaderPageState extends ConsumerState<ReaderPage>
             .update(index, position.charOffset.clamp(0, chapter.body.length));
       }
       _rebuildWindow();
-      setState(() {});
+      _refreshContent();
       if (index == _targetIndex) _prefetchAfterFrame(index);
     } catch (error) {
       if (mounted && epoch == _epoch && (index - _targetIndex).abs() <= 1) {
-        setState(() => _errors[index] = error);
+        _errors[index] = error;
+        _refreshContent();
       }
     } finally {
       if (epoch == _epoch) unawaited(_loading.remove(index));
@@ -241,7 +249,8 @@ class _ReaderPageState extends ConsumerState<ReaderPage>
                 Text('Could not load chapter ${index + 1}.'),
                 TextButton.icon(
                   onPressed: () {
-                    setState(() => _errors.remove(index));
+                    _errors.remove(index);
+                    _refreshContent();
                     unawaited(_loadChapter(index));
                   },
                   icon: const Icon(Icons.refresh),
@@ -271,9 +280,6 @@ class _ReaderPageState extends ConsumerState<ReaderPage>
   Widget build(BuildContext context) {
     final brightness = ref.watch(readerBrightnessProvider.notifier);
     final mode = ref.watch(readerSettingsProvider.select((s) => s.mode));
-    ref.watch(
-      readerPositionProvider(widget.bookId).select((p) => p.chapterIndex),
-    );
     final catalog = _catalog;
     return PopScope<void>(
       onPopInvokedWithResult: (didPop, _) {
@@ -308,10 +314,17 @@ class _ReaderPageState extends ConsumerState<ReaderPage>
                             bottom: false,
                             child: ExcludeSemantics(
                               excluding: _menuVisible,
-                              child: ReaderChapterBar(
-                                chapterTitle:
-                                    catalog.chapters[_targetIndex].title,
-                                onToggleMenu: _toggleMenu,
+                              child: Consumer(
+                                builder: (context, ref, _) {
+                                  final index = ref.watch(
+                                    readerPositionProvider(widget.bookId)
+                                        .select((p) => p.chapterIndex),
+                                  );
+                                  return ReaderChapterBar(
+                                    chapterTitle: catalog.chapters[index].title,
+                                    onToggleMenu: _toggleMenu,
+                                  );
+                                },
                               ),
                             ),
                           ),
@@ -322,25 +335,31 @@ class _ReaderPageState extends ConsumerState<ReaderPage>
                               child: Stack(
                                 children: [
                                   Positioned.fill(
-                                    child: _window == null
-                                        ? GestureDetector(
-                                            behavior: HitTestBehavior.opaque,
-                                            onTap: _toggleMenu,
-                                            child: _chapterStatus(_targetIndex),
-                                          )
-                                        : mode == ReaderMode.paged
-                                        ? PagedReader(
-                                            key: ValueKey(widget.bookId),
-                                            book: _window!,
-                                            onToggleMenu: _toggleMenu,
-                                            boundaryBuilder: _chapterStatus,
-                                          )
-                                        : ScrollReader(
-                                            key: ValueKey(widget.bookId),
-                                            book: _window!,
-                                            onToggleMenu: _toggleMenu,
-                                            boundaryBuilder: _chapterStatus,
-                                          ),
+                                    child: ValueListenableBuilder<int>(
+                                      valueListenable: _contentRevision,
+                                      builder: (context, _, child) =>
+                                          _window == null
+                                          ? GestureDetector(
+                                              behavior: HitTestBehavior.opaque,
+                                              onTap: _toggleMenu,
+                                              child: _chapterStatus(
+                                                _targetIndex,
+                                              ),
+                                            )
+                                          : mode == ReaderMode.paged
+                                          ? PagedReader(
+                                              key: ValueKey(widget.bookId),
+                                              book: _window!,
+                                              onToggleMenu: _toggleMenu,
+                                              boundaryBuilder: _chapterStatus,
+                                            )
+                                          : ScrollReader(
+                                              key: ValueKey(widget.bookId),
+                                              book: _window!,
+                                              onToggleMenu: _toggleMenu,
+                                              boundaryBuilder: _chapterStatus,
+                                            ),
+                                    ),
                                   ),
                                   if (_menuVisible)
                                     Positioned(
@@ -392,9 +411,20 @@ class _ReaderPageState extends ConsumerState<ReaderPage>
                           duration: const Duration(milliseconds: 180),
                           child: SafeArea(
                             bottom: false,
-                            child: ReaderTopBar(
-                              book: _detail!.summary,
-                              chapter: catalog.chapters[_targetIndex],
+                            child: Consumer(
+                              builder: (context, ref, _) {
+                                // Hidden toolbars need no chapter subscription.
+                                final index = _menuVisible
+                                    ? ref.watch(
+                                        readerPositionProvider(widget.bookId)
+                                            .select((p) => p.chapterIndex),
+                                      )
+                                    : _targetIndex;
+                                return ReaderTopBar(
+                                  book: _detail!.summary,
+                                  chapter: catalog.chapters[index],
+                                );
+                              },
                             ),
                           ),
                         ),

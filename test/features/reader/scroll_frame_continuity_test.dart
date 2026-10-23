@@ -62,6 +62,7 @@ void main() {
               : isA<ClampingScrollPhysics>(),
         );
         final palette = readerThemeData(tester);
+        final shell = tester.widget<Scaffold>(find.byType(Scaffold).last);
         final before = {
           for (final text in visibleAnchors(tester).keys)
             text: tester.renderObject(find.text(text)),
@@ -90,6 +91,19 @@ void main() {
           target,
         );
         expect(readerThemeData(tester), same(palette));
+        expect(
+          tester.widget<Scaffold>(find.byType(Scaffold).last),
+          same(shell),
+          reason:
+              'Chapter and prefetch updates must not rebuild the page shell',
+        );
+        expect(
+          find.descendant(
+            of: find.byKey(const ValueKey('reader-chapter-header')),
+            matching: find.text('Chapter ${target + 1}'),
+          ),
+          findsOneWidget,
+        );
         final common = visibleAnchors(tester).keys
             .where(before.containsKey)
             .toList();
