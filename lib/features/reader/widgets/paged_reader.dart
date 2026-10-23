@@ -370,11 +370,7 @@ class _PagedReaderState extends ConsumerState<PagedReader> {
       0,
       pagination.total - 1,
     );
-    controller.animateToPage(
-      target,
-      duration: const Duration(milliseconds: 250),
-      curve: Curves.easeOut,
-    );
+    controller.jumpToPage(target);
   }
 
   void _handleTapUp(TapUpDetails details, Size size, _Pagination pagination) {
