@@ -5,6 +5,8 @@ from __future__ import annotations
 import argparse
 import json
 import logging
+import subprocess
+import threading
 import time
 from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -14,6 +16,60 @@ from urllib.parse import unquote, urlsplit
 
 DEFAULT_DATA_DIR = Path(__file__).resolve().parent / "data" / "books"
 LOGGER = logging.getLogger("novelverse.api")
+
+
+class AndroidPortReverse:
+    """Restore the development API mapping after USB or adb reconnects."""
+
+    def __init__(self, adb: str, port: int):
+        self.adb = adb
+        self.port = f"tcp:{port}"
+        self.stopped = threading.Event()
+        self.thread = threading.Thread(target=self._watch, daemon=True)
+
+    def _run(self, *args):
+        return subprocess.run(
+            [self.adb, *args], capture_output=True, text=True, check=True, timeout=5
+        ).stdout
+
+    def restore(self):
+        for line in self._run("devices").splitlines():
+            device = line.split()
+            if len(device) < 2 or device[1] != "device":
+                continue
+            serial = device[0]
+            try:
+                mappings = self._run("-s", serial, "reverse", "--list")
+                if any(
+                    line.split()[-2:] == [self.port, self.port]
+                    for line in mappings.splitlines()
+                ):
+                    continue
+                self._run("-s", serial, "reverse", self.port, self.port)
+                LOGGER.info("Android API connection restored: %s %s", serial, self.port)
+            except (OSError, subprocess.SubprocessError) as error:
+                # A disconnect during a command must not prevent other devices connecting.
+                LOGGER.debug("Android device temporarily unavailable: %s", error)
+
+    def _watch(self):
+        previous_error = None
+        while not self.stopped.is_set():
+            try:
+                self.restore()
+                previous_error = None
+            except (OSError, subprocess.SubprocessError) as error:
+                message = str(error)
+                if message != previous_error:
+                    LOGGER.warning("Android API connection check failed: %s", message)
+                    previous_error = message
+            self.stopped.wait(2)
+
+    def start(self):
+        self.thread.start()
+
+    def stop(self):
+        self.stopped.set()
+        self.thread.join(timeout=1)
 
 
 class ApiError(Exception):
@@ -168,6 +224,7 @@ def main():
     parser.add_argument("--port", default=8787, type=int)
     parser.add_argument("--delay-ms", default=150, type=int)
     parser.add_argument("--data-dir", default=DEFAULT_DATA_DIR, type=Path)
+    parser.add_argument("--adb", help="Automatically restore Android API port mappings using this adb executable")
     args = parser.parse_args()
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(message)s")
     with create_server(args.host, args.port, args.data_dir, args.delay_ms) as server:
@@ -175,10 +232,16 @@ def main():
         print(f"Novelverse local API: {base}/api/v1/", flush=True)
         print(f"Health: {base}/health | Delay: {args.delay_ms} ms", flush=True)
         print(f"Data: {server.store.root}", flush=True)
+        bridge = AndroidPortReverse(args.adb, server.server_port) if args.adb else None
+        if bridge:
+            bridge.start()
         try:
             server.serve_forever()
         except KeyboardInterrupt:
             print("\nServer stopped.", flush=True)
+        finally:
+            if bridge:
+                bridge.stop()
 
 
 if __name__ == "__main__":

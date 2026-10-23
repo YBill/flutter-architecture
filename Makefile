@@ -21,7 +21,7 @@ check:
 	$(MAKE) check-server
 
 server:
-	$(PYTHON) server/app.py
+	$(PYTHON) server/app.py --adb "$(ADB)"
 
 check-server:
 	$(PYTHON) -m unittest discover -s server/tests -v

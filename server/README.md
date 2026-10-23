@@ -5,11 +5,15 @@
 在仓库根目录启动：
 
 ```sh
-make server
+make server  # 同时自动恢复 Android USB 真机的 API 端口映射
 # 或 python3 server/app.py
 ```
 
-默认监听 `127.0.0.1:8787`，书籍接口延迟 150 ms，可并发处理当前章和相邻章的请求。健康检查：
+默认监听 `127.0.0.1:8787`，书籍接口延迟 150 ms，可并发处理当前章和相邻章的请求。
+
+`make server` 每 2 秒检查已授权的 Android 设备，仅在缺少映射时补建 `tcp:8787` 映射。USB 重连、手机重启或 adb 重启后会自动恢复；其他端口的映射保持不变。只运行 `python3 server/app.py` 时不启用设备检查，也可显式添加 `--adb /path/to/adb`。
+
+健康检查：
 
 ```sh
 curl http://127.0.0.1:8787/health
@@ -33,7 +37,7 @@ curl http://127.0.0.1:8787/health
 先启动服务，再在另一个终端运行 App。dev Debug 直接运行 `main.dart` 时也默认连接本地回环地址；USB 真机仍需下面的端口映射。
 
 - **iOS 模拟器**：`make run-dev`，使用 `config/dev.json` 的 `http://127.0.0.1:8787/api/v1/`。
-- **Android USB 真机**：`make run-dev-android`。该命令先执行 `adb reverse tcp:8787 tcp:8787`，再启动 App；多设备时加 `DEVICE=<设备ID>`。断开 USB 或重启设备后重新映射。IDE 启动时先运行 `make android-reverse`，再选择 `Novelverse dev (local API)`。
+- **Android USB 真机**：保持 `make server` 运行，再执行 `make run-dev-android` 或使用 IDE 的 `Novelverse dev (local API)` 配置。服务会自动补建并恢复端口映射，重连后在 App 中点击 Retry 即可。`make run-dev-android` 也会在启动前主动映射；多设备时加 `DEVICE=<设备ID>`。需要手动修复时执行 `make android-reverse`。
 - **Android 模拟器**：`make run-dev-emulator`，使用 `config/dev_android_emulator.json` 的 `http://10.0.2.2:8787/api/v1/`。
 
 Makefile 的 ADB 默认位置为 macOS Android SDK；其他安装位置用 `ADB=/path/to/adb` 覆盖。修改 `dart-define` 后需要重新运行 App，热更新不会改变编译配置。

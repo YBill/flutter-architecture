@@ -8,7 +8,7 @@ Flutter Android / iOS 小说 App。目前包含基础架构、原型版书籍详
 
 ```sh
 make setup
-make server       # 单独终端启动 Python API
+make server       # 单独终端启动 Python API，并自动恢复 Android USB 端口映射
 make run-dev      # iOS 模拟器；Android USB 真机用 make run-dev-android
 ```
 
