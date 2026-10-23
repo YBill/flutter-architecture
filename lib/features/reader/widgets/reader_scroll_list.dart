@@ -81,6 +81,7 @@ class _ReaderScrollListState extends State<ReaderScrollList> {
       widget.itemScrollController._state = this;
     }
     if (!identical(widget.itemKeys, oldWidget.itemKeys)) {
+      _invalidatePositions();
       _indexKeys();
       final retained = _keyIndexes[_anchorKey];
       if (retained != null) {
@@ -119,6 +120,7 @@ class _ReaderScrollListState extends State<ReaderScrollList> {
       );
 
   void _jumpTo(int index, double alignment) {
+    _invalidatePositions();
     // Only user-requested jumps (contents, settings, mode changes) cancel motion.
     if (_controller.hasClients) {
       _controller.jumpTo(_controller.offset);
@@ -128,6 +130,14 @@ class _ReaderScrollListState extends State<ReaderScrollList> {
       _anchorKey = widget.itemKeys[_anchor];
       _reanchor(alignment);
     });
+  }
+
+  void _invalidatePositions() {
+    // These indexes and coordinates describe the previous layout. A restore
+    // callback may run before the next post-frame report; it must not interpret
+    // them against a chapter window that has just been prepended or trimmed.
+    // The next completed layout will publish fresh positions.
+    widget.itemPositionsListener.itemPositions.value = const <ItemPosition>[];
   }
 
   @override

@@ -149,12 +149,33 @@ class _PagedReaderState extends ConsumerState<PagedReader> {
   bool _contentDirty = false;
   int _viewGeneration = 0;
   _LayoutKey? _appliedLayoutKey;
+  _Pagination? _pendingPagination;
+  final _pointers = <int>{};
+  bool _applyScheduled = false;
+
+  bool get _inMotion =>
+      _pointers.isNotEmpty ||
+      (_controller?.hasClients == true &&
+          _controller!.position.isScrollingNotifier.value);
+
+  void _applyWhenIdle() {
+    if (_applyScheduled || _pendingPagination == null) return;
+    _applyScheduled = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _applyScheduled = false;
+      if (!mounted || _inMotion) return;
+      final pending = _pendingPagination;
+      if (pending != null) setState(() => _applyPagination(pending));
+    });
+    WidgetsBinding.instance.ensureVisualUpdate();
+  }
 
   @override
   void didUpdateWidget(covariant PagedReader oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (widget.book != oldWidget.book) {
       // 章节窗口变化或内容刷新后重新匹配分页，生成完成前保留当前画面。
+      _pendingPagination = null;
       _contentDirty = true;
       _generation++;
     }
@@ -177,6 +198,7 @@ class _PagedReaderState extends ConsumerState<PagedReader> {
       locale,
     );
     if (_layoutKey == key && !_contentDirty) return;
+    _pendingPagination = null;
     final sameLayout = _layoutKey == key;
     _contentDirty = false;
     _layoutKey = key;
@@ -258,7 +280,7 @@ class _PagedReaderState extends ConsumerState<PagedReader> {
     setState(() => _applyPagination(pagination));
   }
 
-  void _applyPagination(_Pagination pagination) {
+  void _applyPagination(_Pagination pagination, {bool force = false}) {
     final oldController = _controller;
     final previous = _pagination;
     final keepController =
@@ -271,6 +293,19 @@ class _PagedReaderState extends ConsumerState<PagedReader> {
           (chapter) =>
               pagination.book.chapters.any((next) => identical(chapter, next)),
         );
+    // Keep the active page sequence until both the pointer and the settling
+    // animation finish. Replacing PageView halfway through a chapter crossing
+    // cancels the drag. Append-only updates retain page coordinates and are safe.
+    if (!force &&
+        !keepController &&
+        previous != null &&
+        previous.book.id == pagination.book.id &&
+        _appliedLayoutKey == _layoutKey &&
+        _inMotion) {
+      _pendingPagination = pagination;
+      return;
+    }
+    _pendingPagination = null;
     _pagination = pagination;
     _appliedLayoutKey = _layoutKey;
     if (keepController) return;
@@ -328,13 +363,23 @@ class _PagedReaderState extends ConsumerState<PagedReader> {
         .update(request.chapterIndex, offset);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
+      final pending = _pendingPagination;
+      if (pending != null) {
+        // Explicit navigation may interrupt motion. Its requested position is
+        // already in the provider, so the new controller opens that exact page.
+        setState(() => _applyPagination(pending, force: true));
+        return;
+      }
       final pagination = _pagination;
       final controller = _controller;
       if (pagination == null || controller == null || !controller.hasClients) {
         return;
       }
       final local = pagination.book.localIndex(request.chapterIndex);
-      if (local < 0) return;
+      if (local < 0) {
+        controller.jumpToPage(controller.page!.round());
+        return;
+      }
       final p = request.fromEnd
           ? pagination.chapterBreaks[local].length - 1
           : 0;
@@ -408,28 +453,49 @@ class _PagedReaderState extends ConsumerState<PagedReader> {
           return const Center(child: CircularProgressIndicator());
         }
 
-        return GestureDetector(
-          onTapUp: (details) => _handleTapUp(details, size, pagination),
-          child: PageView.builder(
-            key: ValueKey(_viewGeneration),
-            controller: _controller,
-            itemCount: pagination.total,
-            onPageChanged: (g) => _onPageChanged(g, pagination),
-            itemBuilder: (context, g) {
-              final boundary = pagination.boundaryAt(g);
-              if (boundary != null) {
-                return widget.boundaryBuilder?.call(boundary) ??
-                    const Center(child: CircularProgressIndicator());
+        return Listener(
+          onPointerDown: (event) => _pointers.add(event.pointer),
+          onPointerUp: (event) {
+            _pointers.remove(event.pointer);
+            _applyWhenIdle();
+          },
+          onPointerCancel: (event) {
+            _pointers.remove(event.pointer);
+            _applyWhenIdle();
+          },
+          child: NotificationListener<ScrollNotification>(
+            onNotification: (notification) {
+              if (notification.depth == 0 &&
+                  notification.metrics.axis == Axis.horizontal &&
+                  notification is ScrollEndNotification) {
+                _applyWhenIdle();
               }
-              final (c, p) = pagination.locate(g);
-              return _buildPage(
-                chapter: pagination.book.chapters[c],
-                pageBreak: pagination.chapterBreaks[c][p],
-                pageIndex: p,
-                pageCount: pagination.chapterBreaks[c].length,
-                settings: settings,
-              );
+              return false;
             },
+            child: GestureDetector(
+              onTapUp: (details) => _handleTapUp(details, size, pagination),
+              child: PageView.builder(
+                key: ValueKey(_viewGeneration),
+                controller: _controller,
+                itemCount: pagination.total,
+                onPageChanged: (g) => _onPageChanged(g, pagination),
+                itemBuilder: (context, g) {
+                  final boundary = pagination.boundaryAt(g);
+                  if (boundary != null) {
+                    return widget.boundaryBuilder?.call(boundary) ??
+                        const Center(child: CircularProgressIndicator());
+                  }
+                  final (c, p) = pagination.locate(g);
+                  return _buildPage(
+                    chapter: pagination.book.chapters[c],
+                    pageBreak: pagination.chapterBreaks[c][p],
+                    pageIndex: p,
+                    pageCount: pagination.chapterBreaks[c].length,
+                    settings: settings,
+                  );
+                },
+              ),
+            ),
           ),
         );
       },

@@ -122,7 +122,7 @@ class _ScrollReaderState extends ConsumerState<ScrollReader> {
       final target = ref.read(readerPositionProvider(next.id)).chapterIndex;
       while (merged.length > _maxMovingChapters) {
         final furthest = merged.keys.reduce(
-          (a, b) => (a - target).abs() > (b - target).abs() ? a : b,
+              (a, b) => (a - target).abs() > (b - target).abs() ? a : b,
         );
         merged.remove(furthest);
       }
@@ -145,9 +145,15 @@ class _ScrollReaderState extends ConsumerState<ScrollReader> {
     // the list would stop a drag/fling whenever the chapter window moves.
     final alignment = sameBook ? _currentAlignment : 0.0;
     final oldItem = _currentItem;
+    final anchor = _entries[oldItem];
     _rebuildEntries();
     final pos = ref.read(readerPositionProvider(widget.book.id));
-    _currentItem = _itemForPosition(pos.chapterIndex, pos.charOffset);
+    _currentItem =
+    sameBook &&
+        anchor.chapterIndex == pos.chapterIndex &&
+        anchor.charOffset == pos.charOffset
+        ? _itemForEntry(anchor)
+        : _itemForPosition(pos.chapterIndex, pos.charOffset);
     _initialItem = _currentItem;
     if (!sameBook || _currentItem != oldItem) {
       _initialAlignment = alignment;
@@ -183,16 +189,16 @@ class _ScrollReaderState extends ConsumerState<ScrollReader> {
   void _rebuildEntries() {
     _requestedBoundary = null;
     _paragraphCache.removeWhere(
-      (chapter, _) => !_renderBook.chapters.contains(chapter),
+          (chapter, _) => !_renderBook.chapters.contains(chapter),
     );
     _chapterEntries.removeWhere(
-      (chapter, _) => !_renderBook.chapters.contains(chapter),
+          (chapter, _) => !_renderBook.chapters.contains(chapter),
     );
     _paragraphs = [
       for (final chapter in _renderBook.chapters)
         _paragraphCache.putIfAbsent(
           chapter,
-          () => splitParagraphs(chapter.body),
+              () => splitParagraphs(chapter.body),
         ),
     ];
 
@@ -214,7 +220,7 @@ class _ScrollReaderState extends ConsumerState<ScrollReader> {
       _entries.addAll(
         _chapterEntries.putIfAbsent(
           chapter,
-          () => [
+              () => [
             _ScrollEntry(
               chapterIndex: chapter.index,
               paragraphIndex: -1,
@@ -258,6 +264,16 @@ class _ScrollReaderState extends ConsumerState<ScrollReader> {
     return _chapterHeaderItems[c] + 1 + paragraphs.indexForOffset(charOffset);
   }
 
+  // A header and its first text block can both have offset zero. Internal
+  // rebasing must retain the actual item; explicit chapter navigation still
+  // uses _itemForPosition to select the header.
+  int _itemForEntry(_ScrollEntry anchor) {
+    final retained = _entryKeys.indexOf(anchor.key);
+    return retained >= 0
+        ? retained
+        : _itemForPosition(anchor.chapterIndex, anchor.charOffset);
+  }
+
   void _jumpAfterLayout(int item, {double alignment = 0}) {
     final anchor = _entries[item];
     _restoring = true;
@@ -271,7 +287,7 @@ class _ScrollReaderState extends ConsumerState<ScrollReader> {
       }
       // Prefetch/compaction may have moved flat indexes since the request.
       // Explicit navigation uses its source position in the latest window.
-      final target = _itemForPosition(anchor.chapterIndex, anchor.charOffset);
+      final target = _itemForEntry(anchor);
       _currentItem = target;
       _scrollController.jumpTo(index: target, alignment: alignment);
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -333,9 +349,9 @@ class _ScrollReaderState extends ConsumerState<ScrollReader> {
         ref
             .read(readerJumpProvider(widget.book.id).notifier)
             .jumpToChapter(
-              entry.chapterIndex,
-              fromEnd: entry.chapterIndex < _renderBook.chapters.first.index,
-            );
+          entry.chapterIndex,
+          fromEnd: entry.chapterIndex < _renderBook.chapters.first.index,
+        );
       }
       return;
     }
@@ -411,13 +427,13 @@ class _ScrollReaderState extends ConsumerState<ScrollReader> {
       return SizedBox(
         height: 200,
         child:
-            widget.boundaryBuilder?.call(entry.chapterIndex) ??
+        widget.boundaryBuilder?.call(entry.chapterIndex) ??
             const Center(child: CircularProgressIndicator()),
       );
     }
     return _itemWidgets.putIfAbsent(
       entry,
-      () => _buildTextItem(entry, settings),
+          () => _buildTextItem(entry, settings),
     );
   }
 
