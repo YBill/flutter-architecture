@@ -3,32 +3,44 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../app/theme/app_theme.dart';
+import '../domain/reader_settings.dart';
 import '../state/reader_providers.dart';
 
 /// Reader palettes also wrap modal routes so an open sheet updates immediately.
-class ReaderTheme extends ConsumerWidget {
+class ReaderTheme extends ConsumerStatefulWidget {
   const ReaderTheme({super.key, required this.child});
   final Widget child;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<ReaderTheme> createState() => _ReaderThemeState();
+}
+
+class _ReaderThemeState extends ConsumerState<ReaderTheme> {
+  ThemeData? _baseTheme;
+  ReaderBackground? _background;
+  ThemeData? _theme;
+
+  @override
+  Widget build(BuildContext context) {
     final settings = ref.watch(readerSettingsProvider);
     final night = settings.isNightMode;
-    final scheme = ColorScheme.fromSeed(
-      seedColor: AppTheme.primaryColor,
-      brightness: night ? Brightness.dark : Brightness.light,
-      primary: AppTheme.primaryColor,
-      surface: settings.surfaceColor,
-      onSurface: settings.textColor,
-    );
-    return Theme(
-      data: ThemeData(
-        useMaterial3: true,
+    final base = Theme.of(context);
+    if (_baseTheme != base || _background != settings.background) {
+      _baseTheme = base;
+      _background = settings.background;
+      final scheme = ColorScheme.fromSeed(
+        seedColor: AppTheme.primaryColor,
+        brightness: night ? Brightness.dark : Brightness.light,
+        primary: AppTheme.primaryColor,
+        surface: settings.surfaceColor,
+        onSurface: settings.textColor,
+      );
+      _theme = base.copyWith(
         colorScheme: scheme,
         scaffoldBackgroundColor: settings.backgroundColor,
         dividerColor: settings.dividerColor,
         iconTheme: IconThemeData(color: settings.textColor),
-        textTheme: Theme.of(context).textTheme.apply(
+        textTheme: base.textTheme.apply(
           bodyColor: settings.textColor,
           displayColor: settings.textColor,
         ),
@@ -38,7 +50,10 @@ class ReaderTheme extends ConsumerWidget {
           inactiveTrackColor: settings.selectedControlColor,
           trackHeight: 6,
         ),
-      ),
+      );
+    }
+    return Theme(
+      data: _theme!,
       child: AnnotatedRegion<SystemUiOverlayStyle>(
         value: (night ? SystemUiOverlayStyle.light : SystemUiOverlayStyle.dark)
             .copyWith(
@@ -50,7 +65,7 @@ class ReaderTheme extends ConsumerWidget {
               systemStatusBarContrastEnforced: false,
               systemNavigationBarContrastEnforced: false,
             ),
-        child: Material(color: settings.surfaceColor, child: child),
+        child: Material(color: settings.surfaceColor, child: widget.child),
       ),
     );
   }

@@ -9,7 +9,7 @@ import 'package:novelverse/features/reader/domain/reader_settings.dart';
 import 'package:novelverse/features/reader/state/reader_providers.dart';
 import 'package:novelverse/features/reader/widgets/paged_reader.dart';
 import 'package:novelverse/features/reader/widgets/scroll_reader.dart';
-import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
+import 'package:novelverse/features/reader/widgets/reader_scroll_list.dart';
 
 void main() {
   testWidgets('正文和页码避开安全区，系统文字缩放不会改变分页测量', (tester) async {
@@ -102,11 +102,9 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
-    final list = tester.widget<ScrollablePositionedList>(
-      find.byType(ScrollablePositionedList),
-    );
+    final list = tester.widget<ReaderScrollList>(find.byType(ReaderScrollList));
     expect(list.itemCount, greaterThan(100));
-    list.itemScrollController!.jumpTo(index: list.itemCount ~/ 2);
+    list.itemScrollController.jumpTo(index: list.itemCount ~/ 2);
     await tester.pumpAndSettle();
     final container = ProviderScope.containerOf(
       tester.element(find.byType(ScrollReader)),

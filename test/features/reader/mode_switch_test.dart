@@ -13,7 +13,7 @@ import 'package:novelverse/features/reader/presentation/reader_page.dart';
 import 'package:novelverse/features/reader/domain/reader_settings.dart';
 import 'package:novelverse/features/reader/state/reader_providers.dart';
 import 'package:novelverse/features/reader/widgets/scroll_reader.dart';
-import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
+import 'package:novelverse/features/reader/widgets/reader_scroll_list.dart';
 
 void main() {
   testWidgets('深处位置切换模式、改字号和旋转窗口后仍保留附近内容', (tester) async {
@@ -127,11 +127,9 @@ void main() {
         .read(readerSettingsProvider.notifier)
         .update((s) => s.copyWith(mode: ReaderMode.scroll));
     await tester.pumpAndSettle();
-    final list = tester.widget<ScrollablePositionedList>(
-      find.byType(ScrollablePositionedList),
-    );
+    final list = tester.widget<ReaderScrollList>(find.byType(ReaderScrollList));
     // 不等待 ScrollEnd，视口位置变化时就应更新锚点。
-    list.itemScrollController!.jumpTo(index: list.itemCount * 3 ~/ 4);
+    list.itemScrollController.jumpTo(index: list.itemCount * 3 ~/ 4);
     await tester.pump();
     await tester.pump();
     expect(

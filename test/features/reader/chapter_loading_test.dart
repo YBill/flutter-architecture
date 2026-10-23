@@ -5,7 +5,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
+import 'package:novelverse/features/reader/widgets/reader_scroll_list.dart';
 import 'package:novelverse/features/books/data/book_cache.dart';
 import 'package:novelverse/features/books/data/book_repository.dart';
 import 'package:novelverse/features/reader/logic/paragraph_splitter.dart';
@@ -97,10 +97,8 @@ void main() {
             item += 1 + splitParagraphs(chapter.body).texts.length;
           }
           tester
-              .widget<ScrollablePositionedList>(
-                find.byType(ScrollablePositionedList),
-              )
-              .itemScrollController!
+              .widget<ReaderScrollList>(find.byType(ReaderScrollList))
+              .itemScrollController
               .jumpTo(index: item);
           await tester.pumpAndSettle();
         }
@@ -185,10 +183,8 @@ void main() {
               .jumpToPage(2);
         } else {
           tester
-              .widget<ScrollablePositionedList>(
-                find.byType(ScrollablePositionedList),
-              )
-              .itemScrollController!
+              .widget<ReaderScrollList>(find.byType(ReaderScrollList))
+              .itemScrollController
               .jumpTo(index: 8, alignment: -0.15);
         }
         await frames(tester);

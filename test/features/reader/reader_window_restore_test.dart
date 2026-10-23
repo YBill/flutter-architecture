@@ -9,7 +9,7 @@ import 'package:novelverse/features/books/domain/book.dart';
 import 'package:novelverse/features/reader/logic/paragraph_splitter.dart';
 import 'package:novelverse/features/reader/state/reader_providers.dart';
 import 'package:novelverse/features/reader/widgets/scroll_reader.dart';
-import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
+import 'package:novelverse/features/reader/widgets/reader_scroll_list.dart';
 
 import 'helpers/reader_test_support.dart';
 import 'helpers/test_book_api.dart';
@@ -63,10 +63,8 @@ void main() {
       await tester.pumpWidget(host(window([1])));
       await tester.pumpAndSettle();
       tester
-          .widget<ScrollablePositionedList>(
-            find.byType(ScrollablePositionedList),
-          )
-          .itemScrollController!
+          .widget<ReaderScrollList>(find.byType(ReaderScrollList))
+          .itemScrollController
           .jumpTo(index: 9, alignment: -0.1);
       await tester.pumpAndSettle();
 
