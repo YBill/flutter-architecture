@@ -10,7 +10,7 @@ class AppLocalizationsEn extends AppLocalizations {
   AppLocalizationsEn([String locale = 'en']) : super(locale);
 
   @override
-  String get appTitle => 'NovaNovel';
+  String get appTitle => 'Novelverse';
 
   @override
   String get pageNotFound => 'Page not found';

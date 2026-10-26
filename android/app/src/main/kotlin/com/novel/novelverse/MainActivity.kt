@@ -1,4 +1,4 @@
-package com.nova.novel.reader.stories
+package com.novel.novelverse
 
 import io.flutter.embedding.android.FlutterActivity
 
