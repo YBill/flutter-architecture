@@ -150,6 +150,7 @@ class _ReaderPageState extends ConsumerState<ReaderPage>
     _targetIndex = index;
     _loaded.removeWhere((key, _) => (key - index).abs() > 1);
     _errors.removeWhere((key, _) => (key - index).abs() > 1);
+    _includeMemoryNeighbours(index);
     if (writePosition) {
       final end = _loaded[index]?.body.length ?? (1 << 30);
       ref
@@ -185,6 +186,7 @@ class _ReaderPageState extends ConsumerState<ReaderPage>
       _loaded[index] = chapter;
       _position.registerChapter(chapter);
       if (index == _targetIndex) {
+        _includeMemoryNeighbours(index);
         final position = ref.read(readerPositionProvider(widget.bookId));
         ref
             .read(readerPositionProvider(widget.bookId).notifier)
@@ -200,6 +202,26 @@ class _ReaderPageState extends ConsumerState<ReaderPage>
       }
     } finally {
       if (epoch == _epoch) unawaited(_loading.remove(index));
+    }
+  }
+
+  void _includeMemoryNeighbours(int index) {
+    final catalog = _catalog!;
+    final repository = ref.read(bookRepositoryProvider);
+    for (final neighbour in [index - 1, index + 1]) {
+      if (neighbour < 0 ||
+          neighbour >= catalog.chapters.length ||
+          _loaded.containsKey(neighbour)) {
+        continue;
+      }
+      final chapter = repository.getMemoryChapter(
+        widget.bookId,
+        catalog.chapters[neighbour],
+      );
+      if (chapter == null) continue;
+      _loaded[neighbour] = chapter;
+      _errors.remove(neighbour);
+      _position.registerChapter(chapter);
     }
   }
 
@@ -258,20 +280,10 @@ class _ReaderPageState extends ConsumerState<ReaderPage>
                 ),
               ],
             )
-          : index != _targetIndex && !_loading.containsKey(index)
-          ? TextButton(
-              onPressed: () => _activate(index, fromEnd: index < _targetIndex),
-              child: Text(
-                index < _targetIndex ? 'Previous chapter' : 'Next chapter',
-              ),
-            )
-          : Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const CircularProgressIndicator(),
-                const SizedBox(height: 16),
-                Text('Loading chapter ${index + 1}…'),
-              ],
+          : _ChapterLoading(
+              key: ValueKey((index, index == _targetIndex)),
+              chapterNumber: index + 1,
+              delayed: index != _targetIndex,
             ),
     ),
   );
@@ -436,4 +448,54 @@ class _ReaderPageState extends ConsumerState<ReaderPage>
       ),
     );
   }
+}
+
+/// Avoid flashing a loading indicator for fast file/cache reads at a boundary.
+/// The current chapter still shows its loading state immediately.
+class _ChapterLoading extends StatefulWidget {
+  const _ChapterLoading({
+    super.key,
+    required this.chapterNumber,
+    required this.delayed,
+  });
+
+  final int chapterNumber;
+  final bool delayed;
+
+  @override
+  State<_ChapterLoading> createState() => _ChapterLoadingState();
+}
+
+class _ChapterLoadingState extends State<_ChapterLoading> {
+  Timer? _timer;
+  late bool _visible;
+
+  @override
+  void initState() {
+    super.initState();
+    _visible = !widget.delayed;
+    if (!_visible) {
+      _timer = Timer(const Duration(milliseconds: 150), () {
+        if (mounted) setState(() => _visible = true);
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => !_visible
+      ? const SizedBox.shrink()
+      : Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const CircularProgressIndicator(),
+            const SizedBox(height: 16),
+            Text('Loading chapter ${widget.chapterNumber}…'),
+          ],
+        );
 }

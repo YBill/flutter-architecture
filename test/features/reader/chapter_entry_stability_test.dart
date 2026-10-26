@@ -86,14 +86,12 @@ void main() {
                     .getRect(find.byWidget(element.widget))
                     .overlaps(viewport),
               );
-              if (sawNextTitle) {
-                expect(
-                  nextTitleVisible,
-                  isTrue,
-                  reason:
-                      'Reopen $reopen frame $frame must not remove the prefetched title',
-                );
-              }
+              expect(
+                nextTitleVisible,
+                isTrue,
+                reason:
+                    'Reopen $reopen frame $frame must include the cached next title from the first readable frame',
+              );
               sawNextTitle |= nextTitleVisible;
             }
           }

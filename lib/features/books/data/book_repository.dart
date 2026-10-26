@@ -112,14 +112,25 @@ class BookRepository {
     });
   }
 
-  Future<Chapter> getChapter(String bookId, ChapterMeta meta) async {
+  /// Synchronous lookup for composing a complete reader window before paint.
+  /// A miss never starts file I/O or a network request.
+  Chapter? getMemoryChapter(String bookId, ChapterMeta meta) {
     final key = 'chapter/$bookId/${meta.id}/${meta.version}';
     final cached = _chapters.remove(key);
-    if (cached != null) {
+    if (cached != null &&
+        cached.index == meta.index &&
+        cached.title == meta.title) {
       _chapters[key] = cached;
       logger?.debug('[Book cache] memory $key');
       return cached;
     }
+    return null;
+  }
+
+  Future<Chapter> getChapter(String bookId, ChapterMeta meta) async {
+    final cached = getMemoryChapter(bookId, meta);
+    if (cached != null) return cached;
+    final key = 'chapter/$bookId/${meta.id}/${meta.version}';
     return _once(key, () async {
       final stored = await _read(key);
       Chapter? chapter;
