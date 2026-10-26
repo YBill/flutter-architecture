@@ -122,7 +122,7 @@ class _ScrollReaderState extends ConsumerState<ScrollReader> {
       final target = ref.read(readerPositionProvider(next.id)).chapterIndex;
       while (merged.length > _maxMovingChapters) {
         final furthest = merged.keys.reduce(
-              (a, b) => (a - target).abs() > (b - target).abs() ? a : b,
+          (a, b) => (a - target).abs() > (b - target).abs() ? a : b,
         );
         merged.remove(furthest);
       }
@@ -149,9 +149,9 @@ class _ScrollReaderState extends ConsumerState<ScrollReader> {
     _rebuildEntries();
     final pos = ref.read(readerPositionProvider(widget.book.id));
     _currentItem =
-    sameBook &&
-        anchor.chapterIndex == pos.chapterIndex &&
-        anchor.charOffset == pos.charOffset
+        sameBook &&
+            anchor.chapterIndex == pos.chapterIndex &&
+            anchor.charOffset == pos.charOffset
         ? _itemForEntry(anchor)
         : _itemForPosition(pos.chapterIndex, pos.charOffset);
     _initialItem = _currentItem;
@@ -189,16 +189,16 @@ class _ScrollReaderState extends ConsumerState<ScrollReader> {
   void _rebuildEntries() {
     _requestedBoundary = null;
     _paragraphCache.removeWhere(
-          (chapter, _) => !_renderBook.chapters.contains(chapter),
+      (chapter, _) => !_renderBook.chapters.contains(chapter),
     );
     _chapterEntries.removeWhere(
-          (chapter, _) => !_renderBook.chapters.contains(chapter),
+      (chapter, _) => !_renderBook.chapters.contains(chapter),
     );
     _paragraphs = [
       for (final chapter in _renderBook.chapters)
         _paragraphCache.putIfAbsent(
           chapter,
-              () => splitParagraphs(chapter.body),
+          () => splitParagraphs(chapter.body),
         ),
     ];
 
@@ -220,7 +220,7 @@ class _ScrollReaderState extends ConsumerState<ScrollReader> {
       _entries.addAll(
         _chapterEntries.putIfAbsent(
           chapter,
-              () => [
+          () => [
             _ScrollEntry(
               chapterIndex: chapter.index,
               paragraphIndex: -1,
@@ -349,9 +349,9 @@ class _ScrollReaderState extends ConsumerState<ScrollReader> {
         ref
             .read(readerJumpProvider(widget.book.id).notifier)
             .jumpToChapter(
-          entry.chapterIndex,
-          fromEnd: entry.chapterIndex < _renderBook.chapters.first.index,
-        );
+              entry.chapterIndex,
+              fromEnd: entry.chapterIndex < _renderBook.chapters.first.index,
+            );
       }
       return;
     }
@@ -427,13 +427,13 @@ class _ScrollReaderState extends ConsumerState<ScrollReader> {
       return SizedBox(
         height: 200,
         child:
-        widget.boundaryBuilder?.call(entry.chapterIndex) ??
+            widget.boundaryBuilder?.call(entry.chapterIndex) ??
             const Center(child: CircularProgressIndicator()),
       );
     }
     return _itemWidgets.putIfAbsent(
       entry,
-          () => _buildTextItem(entry, settings),
+      () => _buildTextItem(entry, settings),
     );
   }
 

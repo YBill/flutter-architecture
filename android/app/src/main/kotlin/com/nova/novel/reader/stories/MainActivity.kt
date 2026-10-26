@@ -1,4 +1,4 @@
-package com.novel.novelverse
+package com.nova.novel.reader.stories
 
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
@@ -13,7 +13,7 @@ class MainActivity : FlutterActivity() {
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
-        channel = MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "com.novel.novelverse/brightness")
+        channel = MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "com.nova.novel.reader.stories/brightness")
         channel?.setMethodCallHandler { call, result ->
             try {
                 when (call.method) {

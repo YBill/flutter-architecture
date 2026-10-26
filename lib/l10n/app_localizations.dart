@@ -97,7 +97,7 @@ abstract class AppLocalizations {
   /// Application name
   ///
   /// In en, this message translates to:
-  /// **'Novelverse'**
+  /// **'NovaNovel'**
   String get appTitle;
 
   /// No description provided for @pageNotFound.

@@ -38,7 +38,7 @@ private class ReaderBrightnessPlugin: NSObject, FlutterPlugin, FlutterSceneLifeC
 
   static func register(with registrar: FlutterPluginRegistrar) {
     let instance = ReaderBrightnessPlugin(registrar: registrar)
-    let channel = FlutterMethodChannel(name: "com.novel.novelverse/brightness", binaryMessenger: registrar.messenger())
+    let channel = FlutterMethodChannel(name: "com.nova.novel.reader.stories/brightness", binaryMessenger: registrar.messenger())
     registrar.addMethodCallDelegate(instance, channel: channel)
     registrar.addApplicationDelegate(instance)
     registrar.addSceneDelegate(instance)

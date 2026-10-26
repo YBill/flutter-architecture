@@ -1,6 +1,13 @@
-# Novelverse
+# NovaNovel
 
 Flutter Android / iOS 小说 App。目前包含基础架构、原型版书籍详情页，以及从 `readers` 迁入的完整阅读器。默认启动进入测试书籍详情页。
+
+## 应用名称与标识
+
+- Android / iOS 应用显示名称：`NovaNovel`。
+- Android `applicationId` / `namespace`、iOS Bundle Identifier：`com.nova.novel.reader.stories`，各构建环境共用。
+- Google Play 商店标题在 Play Console 中单独配置，桌面名称不包含 `Read Stories and Books`。
+- `pubspec.yaml` 的 `name: novelverse` 是内部 Dart 包名，供 `package:novelverse/...` 导入使用，不决定应用显示名称或原生包名。
 
 ## 环境与启动
 

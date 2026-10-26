@@ -2,7 +2,9 @@ import 'package:flutter/services.dart';
 
 /// 各次阅读共用队列，确保退出时的还原排在未完成的亮度设置之后。
 class ReaderBrightnessDriver {
-  static const channel = MethodChannel('com.novel.novelverse/brightness');
+  static const channel = MethodChannel(
+    'com.nova.novel.reader.stories/brightness',
+  );
   Future<void> _pending = Future<void>.value();
 
   Future<T> _run<T>(Future<T> Function() action) {
