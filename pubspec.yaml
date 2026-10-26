@@ -27,6 +27,7 @@ dependencies:
   scrollable_positioned_list: ^0.3.8
   crypto: ^3.0.7
   share_plus: ^13.3.1
+  screen_brightness: ^2.1.11
 
 dev_dependencies:
   flutter_test:
@@ -37,6 +38,7 @@ dev_dependencies:
   json_serializable: ^6.15.2
   riverpod_generator: ^4.0.9
   shared_preferences_platform_interface: ^2.4.2
+  screen_brightness_platform_interface: ^2.1.2
 
 flutter:
   uses-material-design: true

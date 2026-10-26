@@ -1,12 +1,13 @@
 import 'helpers/mock_book_api.dart';
 
 import 'helpers/reader_test_support.dart';
+import 'helpers/fake_screen_brightness.dart';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:novelverse/features/reader/logic/reader_brightness.dart';
+import 'package:screen_brightness_platform_interface/screen_brightness_platform_interface.dart';
 import 'package:novelverse/app/app.dart';
 import 'package:novelverse/features/books/data/book_api.dart';
 import 'package:novelverse/features/books/presentation/book_detail_page.dart';
@@ -22,35 +23,10 @@ void main() {
   testWidgets('Night mode仅影响阅读页，手动亮度在系统返回和按钮返回时都还原', (tester) async {
     await tester.binding.setSurfaceSize(const Size(390, 844));
     addTearDown(() => tester.binding.setSurfaceSize(null));
-    var currentBrightness = 0.72;
-    double? originalBrightness;
-    final calls = <String>[];
-    tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
-      ReaderBrightnessDriver.channel,
-      (call) async {
-        calls.add(call.method);
-        switch (call.method) {
-          case 'getBrightness':
-            return currentBrightness;
-          case 'setBrightness':
-            originalBrightness ??= currentBrightness;
-            currentBrightness = (call.arguments as Map)['brightness'] as double;
-            return null;
-          case 'resetBrightness':
-            currentBrightness = originalBrightness ?? currentBrightness;
-            originalBrightness = null;
-            return null;
-          default:
-            throw PlatformException(code: 'unexpected_method');
-        }
-      },
-    );
-    addTearDown(
-      () => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
-        ReaderBrightnessDriver.channel,
-        null,
-      ),
-    );
+    final originalPlatform = ScreenBrightnessPlatform.instance;
+    final platform = FakeScreenBrightness(brightness: 0.72);
+    ScreenBrightnessPlatform.instance = platform;
+    addTearDown(() => ScreenBrightnessPlatform.instance = originalPlatform);
 
     await tester.pumpWidget(
       ProviderScope(
@@ -69,7 +45,7 @@ void main() {
         .backgroundColor;
     await tester.tap(find.byKey(const ValueKey('start-reading')));
     await tester.pumpAndSettle();
-    expect(currentBrightness, 0.72, reason: '进入时不覆盖系统亮度');
+    expect(platform.brightness, 0.72, reason: '进入时不覆盖系统亮度');
     await tester.tapAt(const Offset(370, 400));
     await tester.pumpAndSettle();
     final container = ProviderScope.containerOf(
@@ -131,14 +107,14 @@ void main() {
 
     tester.widget<Slider>(find.byType(Slider)).onChanged!(0.25);
     await tester.pumpAndSettle();
-    expect(currentBrightness, 0.25);
+    expect(platform.brightness, 0.25);
     expect(find.text('Use system'), findsNothing);
     expect(container.read(readerBrightnessProvider).followSystem, isFalse);
     tester.widget<Slider>(find.byType(Slider)).onChanged!(0.4);
     await tester.pumpAndSettle();
     await tester.binding.handlePopRoute(); // 只关闭Settings面板
     await tester.pumpAndSettle();
-    expect(currentBrightness, 0.4);
+    expect(platform.brightness, 0.4);
     container
         .read(readerSettingsProvider.notifier)
         .update((s) => s.copyWith(mode: ReaderMode.scroll));
@@ -147,7 +123,7 @@ void main() {
       Theme.of(tester.element(find.byType(ScrollReader))).brightness,
       Brightness.dark,
     );
-    expect(currentBrightness, 0.4, reason: '切换阅读模式不还原亮度');
+    expect(platform.brightness, 0.4, reason: '切换阅读模式不还原亮度');
     await tester.binding.handlePopRoute();
     await tester.pumpAndSettle();
     expect(find.byType(BookDetailPage), findsOneWidget);
@@ -155,7 +131,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.byType(BookDetailPage), findsOneWidget);
     expect(find.byType(ReaderPage), findsNothing);
-    expect(currentBrightness, 0.72);
+    expect(platform.brightness, 0.72);
     expect(
       tester.widget<Scaffold>(find.byType(Scaffold)).backgroundColor,
       homeColor,
@@ -175,10 +151,10 @@ void main() {
 
     // Re-entering reads the current system brightness, rather than the
     // previous reader override or a previously captured system value.
-    currentBrightness = 0.61;
+    platform.brightness = 0.61;
     await tester.tap(find.byKey(const ValueKey('start-reading')));
     await tester.pumpAndSettle();
-    expect(currentBrightness, 0.61);
+    expect(platform.brightness, 0.61);
     expect(container.read(readerBrightnessProvider).followSystem, isTrue);
     expect(container.read(readerBrightnessProvider).value, 0.61);
     container.read(readerBrightnessProvider.notifier).setBrightness(0.35);
@@ -187,12 +163,17 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.byTooltip('Back to book'));
     await tester.pumpAndSettle();
-    expect(currentBrightness, 0.61);
+    expect(platform.brightness, 0.61);
     expect(find.byType(BookDetailPage), findsOneWidget);
     await tester.binding.handlePopRoute();
     await tester.pumpAndSettle();
     expect(find.byType(BookDetailPage), findsOneWidget);
-    expect(calls.where((method) => method == 'resetBrightness'), hasLength(2));
+    expect(
+      platform.calls.where(
+        (method) => method == 'resetApplicationScreenBrightness',
+      ),
+      hasLength(2),
+    );
     expect(tester.takeException(), isNull);
     await tester.pumpWidget(const SizedBox.shrink());
     await tester.pumpAndSettle();

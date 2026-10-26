@@ -20,7 +20,7 @@ class ReaderBrightnessState {
 
 final _brightnessDriverProvider = Provider((ref) => ReaderBrightnessDriver());
 
-/// 只在阅读页存在期间存活。原生端另行处理切后台时的还原及回前台时的恢复。
+/// 只在阅读页存在期间存活。screen_brightness 处理前后台亮度恢复。
 class ReaderBrightnessNotifier extends Notifier<ReaderBrightnessState>
     with WidgetsBindingObserver {
   late ReaderBrightnessDriver _driver;
