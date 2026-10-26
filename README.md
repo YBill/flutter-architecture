@@ -84,7 +84,7 @@ test/                          # 基础设施和应用接线测试
 
 真实正文来自参考项目 `readers`：**Claimed By The Ruthless Alpha**，作者 **Ofotokun Bridget**。203 章正文总计约 1.17 MB，平均每章约 5,700 字符，最大一章约 11,400 字符。原始章节文件完整保留在 `server/data/books/`；服务端响应时仅移除与目录匹配的独立标题行，统一换行。JSON 和正文不再打包进 App。
 
-阅读量、收藏量、评分和六本推荐为模拟数据。详情、书单及推荐 JSON 的 `coverUrl` 都使用提供的 HTTPS 封面地址，组件按真实网络方式加载，加载中、缺图及失败时显示简单占位图，不再打包或裁切原型封面素材。推荐 JSON 的 `targetBookId` 暂时指向这本真实测试书；未提供该字段时使用推荐书自身 ID，页面不指定测试书 ID。
+阅读量、收藏量、评分和六本推荐为模拟数据。详情、书单及推荐 JSON 的 `coverUrl` 都使用提供的 HTTPS 封面地址，公共 `BookCover` 直接使用 `cached_network_image` 的 `CachedNetworkImage` 组件加载，详情与推荐中相同 URL 共用内存和磁盘缓存。Android / iOS 的磁盘文件由库的默认缓存管理器维护，内存缓存释放或 App 重启后可复用仍保留的文件；文件过期时按服务端缓存响应头校验或更新，系统也可能清理缓存目录。加载中、缺图及失败时仍显示简单占位图，关闭默认淡入淡出以保持原有显示效果。封面由外层 `Semantics` 提供书名描述，内部图片和占位图使用 `ExcludeSemantics` 避免重复朗读，评分文字保留无障碍信息。不再打包或裁切原型封面素材。推荐 JSON 的 `targetBookId` 暂时指向这本真实测试书；未提供该字段时使用推荐书自身 ID，页面不指定测试书 ID。
 
 `HttpBookApi` 通过已有 Dio / ApiClient 请求 Python 本地服务，默认每次书籍请求延迟 150 ms。书名、简介、统计、推荐、封面地址与推荐跳转目标均来自 HTTP 响应；封面通过独立 HTTPS 请求加载。服务关闭时显示网络错误，不回退到 App 内置数据。`MockBookApi` 仅保留在测试目录，读取服务端 fixture 以隔离单元测试。后续服务端沿用当前协议时，修改 `API_BASE_URL` 即可；协议有变化时只调整数据层。
 

@@ -1,8 +1,9 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 
 import '../../domain/book.dart';
 
-/// Displays the cover URL returned by the book API.
+/// Displays API covers with shared memory and disk caching.
 class BookCover extends StatelessWidget {
   const BookCover({required this.book, this.rating, super.key});
 
@@ -31,22 +32,21 @@ class BookCover extends StatelessWidget {
           child: Stack(
             fit: StackFit.expand,
             children: [
-              if (coverUrl != null && coverUrl.isNotEmpty)
-                Image.network(
-                  coverUrl,
-                  fit: BoxFit.cover,
-                  excludeFromSemantics: true,
-                  frameBuilder: (
-                    context,
-                    child,
-                    frame,
-                    wasSynchronouslyLoaded,
-                  ) => frame == null ? const _CoverPlaceholder() : child,
-                  errorBuilder: (_, _, _) =>
-                      const _CoverPlaceholder(failed: true),
-                )
-              else
-                const _CoverPlaceholder(),
+              // The outer Semantics supplies the cover's accessible label.
+              ExcludeSemantics(
+                child: coverUrl != null && coverUrl.isNotEmpty
+                    ? CachedNetworkImage(
+                        imageUrl: coverUrl,
+                        fit: BoxFit.cover,
+                        filterQuality: FilterQuality.medium,
+                        fadeInDuration: Duration.zero,
+                        fadeOutDuration: Duration.zero,
+                        placeholder: (_, _) => const _CoverPlaceholder(),
+                        errorWidget: (_, _, _) =>
+                            const _CoverPlaceholder(failed: true),
+                      )
+                    : const _CoverPlaceholder(),
+              ),
               if (rating case final value?)
                 Positioned(
                   bottom: 0,
