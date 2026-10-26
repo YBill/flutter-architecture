@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/providers/core_providers.dart';
 
 import '../../books/domain/book.dart';
+import '../../books/domain/book_version_exception.dart';
 import '../domain/reader_settings.dart';
 import '../state/reader_providers.dart';
 import '../state/reader_brightness_provider.dart';
@@ -29,6 +30,7 @@ class _ReaderPageState extends ConsumerState<ReaderPage>
   BookDetail? _detail;
   BookCatalog? _catalog;
   Object? _openError;
+  bool _hasOpened = false;
   int _targetIndex = 0;
   int _epoch = 0;
   final _loaded = <int, Chapter>{};
@@ -94,7 +96,14 @@ class _ReaderPageState extends ConsumerState<ReaderPage>
 
   Future<void> _open() async {
     final epoch = ++_epoch;
+    // Refreshing metadata invalidates ordinal indexes and old chapter bodies.
+    // Keep the position provider's stable chapter ID, but detach the old reader
+    // before bindCatalog remaps it, so old callbacks cannot activate an index.
+    _catalog = null;
+    _window = null;
+    _loaded.clear();
     _loading.clear();
+    _errors.clear();
     setState(() => _openError = null);
     try {
       final logger = _logger;
@@ -124,11 +133,12 @@ class _ReaderPageState extends ConsumerState<ReaderPage>
         return;
       }
       final saved = ref.read(readerPositionProvider(widget.bookId));
-      final entry = widget.initialChapterId;
+      final entry = _hasOpened ? null : widget.initialChapterId;
       final target = entry == null
           ? saved.chapterIndex.clamp(0, catalog.chapters.length - 1)
           : catalog.chapters.indexWhere((c) => c.id == entry);
       if (target < 0) throw StateError('Chapter not found');
+      _hasOpened = true;
       _activate(target, offset: entry == null ? saved.charOffset : 0);
       setState(() {});
     } catch (error, stack) {
@@ -261,6 +271,24 @@ class _ReaderPageState extends ConsumerState<ReaderPage>
 
   void _toggleMenu() => setState(() => _menuVisible = !_menuVisible);
 
+  void _retryOpen() {
+    ref.invalidate(bookCatalogProvider(widget.bookId));
+    ref.invalidate(bookDetailProvider(widget.bookId));
+    unawaited(_open());
+  }
+
+  void _retryChapter(int index) {
+    if (_errors[index] is BookVersionChangedException) {
+      // One refresh per user retry. If the server changes again or is offline,
+      // leave the normal error/retry UI instead of starting an automatic loop.
+      _retryOpen();
+      return;
+    }
+    _errors.remove(index);
+    _refreshContent();
+    unawaited(_loadChapter(index));
+  }
+
   Widget _chapterStatus(int index) => Center(
     child: Padding(
       padding: const EdgeInsets.all(24),
@@ -270,11 +298,7 @@ class _ReaderPageState extends ConsumerState<ReaderPage>
               children: [
                 Text('Could not load chapter ${index + 1}.'),
                 TextButton.icon(
-                  onPressed: () {
-                    _errors.remove(index);
-                    _refreshContent();
-                    unawaited(_loadChapter(index));
-                  },
+                  onPressed: () => _retryChapter(index),
                   icon: const Icon(Icons.refresh),
                   label: const Text('Retry'),
                 ),
@@ -305,11 +329,7 @@ class _ReaderPageState extends ConsumerState<ReaderPage>
           body: _openError != null
               ? Center(
                   child: TextButton(
-                    onPressed: () {
-                      ref.invalidate(bookCatalogProvider(widget.bookId));
-                      ref.invalidate(bookDetailProvider(widget.bookId));
-                      unawaited(_open());
-                    },
+                    onPressed: _retryOpen,
                     child: const Text('Could not open this book. Retry'),
                   ),
                 )

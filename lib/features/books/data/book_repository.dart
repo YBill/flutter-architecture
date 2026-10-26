@@ -3,6 +3,7 @@ import 'dart:convert';
 import '../../../core/logging/app_logger.dart';
 
 import '../domain/book.dart';
+import '../domain/book_version_exception.dart';
 import 'book_api.dart';
 import 'book_cache.dart';
 
@@ -98,7 +99,9 @@ class BookRepository {
       if (catalog?.bookId != id || catalog?.version != detail.catalogVersion) {
         catalog = await api.fetchCatalog(id);
         if (catalog.bookId != id || catalog.version != detail.catalogVersion) {
-          throw StateError('Catalog version changed. Please refresh the book.');
+          throw const BookVersionChangedException(
+            'Catalog version changed. Please refresh the book.',
+          );
         }
         await _write(key, catalog.toJson());
       } else {
@@ -131,7 +134,9 @@ class BookRepository {
     final cached = getMemoryChapter(bookId, meta);
     if (cached != null) return cached;
     final key = 'chapter/$bookId/${meta.id}/${meta.version}';
-    return _once(key, () async {
+    // An unchanged chapter can move in a new catalog. Do not share an old
+    // in-flight response (with the old index) with a refreshed reader.
+    return _once('$key/index/${meta.index}', () async {
       final stored = await _read(key);
       Chapter? chapter;
       try {
@@ -147,7 +152,9 @@ class BookRepository {
         if (chapter.id != meta.id ||
             chapter.version != meta.version ||
             chapter.index != meta.index) {
-          throw StateError('Chapter version changed. Please refresh the book.');
+          throw const BookVersionChangedException(
+            'Chapter version changed. Please refresh the book.',
+          );
         }
         await _write(key, chapter.toJson());
       } else {
